@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:MSpecpp.ViewModels"
              xmlns:c="clr-namespace:MSpecpp.Controls"
+             xmlns:rs="using:RangeSlider.Avalonia.Controls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MSpecpp.Views.MainView"
              x:DataType="vm:MainViewModel">
@@ -25,10 +26,9 @@
         <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Name="MainPanel">
             <TextBlock Text="{Binding Information, Mode=TwoWay}" HorizontalAlignment="Center" VerticalAlignment="Center" />
             <Button Content="Read m/z text" HorizontalAlignment="Center" Click="Button_Click" />
-            <Slider Margin="40,0,40,0" x:Name="MainSlider" Maximum="1" Minimum="0" ValueChanged="Slider_ValueChanged"
-                    Value="{Binding ViewScale}" />
-            <TextBlock Text="{Binding #MainSlider.Value}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <c:SpectrumControl Name="SpectrumView" Width="1000" Height="400" />
+            <rs:RangeSlider Margin="40,0,40,0" x:Name="MainSlider" LowerSelectedValue="0" UpperSelectedValue="1" Maximum="1" Minimum="0" IsThumbOverlap="True" />
+            <TextBlock Text="Nothing" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <c:SpectrumCard Name="SpectrumView" Padding="10" Height="400" DataContext="{Binding SpectrumViewModel}" />
         </StackPanel>
         
     </Grid>
