@@ -3,7 +3,6 @@ using Avalonia.Interactivity;
 using MSpecpp.ViewModels;
 using System;
 using System.Linq;
-using MathNet.Numerics;
 
 namespace MSpecpp.Views;
 

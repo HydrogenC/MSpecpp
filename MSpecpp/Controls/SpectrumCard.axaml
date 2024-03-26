@@ -11,9 +11,9 @@
         <Grid RowDefinitions="Auto,*" ColumnDefinitions="Auto,*" >
             <TextBlock Grid.Row="0" Grid.Column="0" Text="25" Padding="10,10,0,0" />
             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" >
-                <TextBlock HorizontalAlignment="Right" Text="Varience: 66" Padding="10,10,10,0" />
-                <TextBlock HorizontalAlignment="Right" Text="RMS: 66" Padding="10,10,10,0" />
-                <TextBlock HorizontalAlignment="Right" Text="Score: 100" Padding="10,10,10,0" />
+                <TextBlock HorizontalAlignment="Right" Text="{Binding Id}" Padding="10,10,10,0" />
+                <TextBlock HorizontalAlignment="Right" Text="{Binding Rms}" Padding="10,10,10,0" />
+                <TextBlock HorizontalAlignment="Right" Text="{Binding Score}" Padding="10,10,10,0" />
             </StackPanel>
             <c:SpectrumControl Name="SpectrumView" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="10,0,10,0" />
         </Grid>

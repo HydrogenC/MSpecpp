@@ -1,27 +1,14 @@
-﻿namespace MSpecpp.ViewModels;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+
+namespace MSpecpp.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-    public static MainViewModel Instance
-    {
-        get;
-        set;
-    }
-    
-    private string info = "Press button to read mass spectrum!";
-    private string title = "MSpec++";
+    public static MainViewModel Instance { get; set; }
 
-    public string Information
-    {
-        get => info;
-        set => SetProperty(ref info, value);
-    }
+    [ObservableProperty] private string information = "Press button to read mass spectrum!";
 
-    public string Title
-    {
-        get => title;
-        set => SetProperty(ref title, value);
-    }
+    [ObservableProperty] private string title = "MSpec++";
 
-    public double ViewScale { get; set; } = 1;
+    [ObservableProperty] public double viewScale = 1;
 }

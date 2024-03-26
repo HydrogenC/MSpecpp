@@ -1,20 +1,26 @@
-﻿namespace MSpecpp.ViewModels;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-public class SpectrumViewModel : ViewModelBase
+namespace MSpecpp.ViewModels;
+
+public partial class SpectrumViewModel : ViewModelBase
 {
-    private Spectrum? _mainSpectrum;
-    
+    private Spectrum? mainSpectrum;
+
     public Spectrum? MainSpectrum
     {
-        get => _mainSpectrum; 
-        set => SetProperty(ref _mainSpectrum, value);
+        get => mainSpectrum;
+        set
+        {
+            SetProperty(ref mainSpectrum, value);
+            
+        }
     }
 
-    private int _id; 
-    
-    public int Id
-    {
-        get => _id;
-        set => SetProperty(ref _id, value);
-    }
+    [ObservableProperty] private int id;
+
+    [ObservableProperty] private float rms;
+
+    [ObservableProperty] private float score;
+
+    [ObservableProperty] private float varience;
 }
