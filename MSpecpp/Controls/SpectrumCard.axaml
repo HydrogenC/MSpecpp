@@ -1,0 +1,21 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:MSpecpp.ViewModels"
+             xmlns:c="clr-namespace:MSpecpp.Controls"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MSpecpp.Controls.SpectrumCard" 
+             x:DataType="vm:SpectrumViewModel">
+    <Border Classes="card" Padding="10">
+        <Grid RowDefinitions="Auto,*" ColumnDefinitions="Auto,*" >
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="25" Padding="10,10,0,0" />
+            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" >
+                <TextBlock HorizontalAlignment="Right" Text="Varience: 66" Padding="10,10,10,0" />
+                <TextBlock HorizontalAlignment="Right" Text="RMS: 66" Padding="10,10,10,0" />
+                <TextBlock HorizontalAlignment="Right" Text="Score: 100" Padding="10,10,10,0" />
+            </StackPanel>
+            <c:SpectrumControl Name="SpectrumView" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="10,0,10,0" />
+        </Grid>
+    </Border>
+</UserControl>

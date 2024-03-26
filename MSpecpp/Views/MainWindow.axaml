@@ -1,0 +1,22 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:MSpecpp.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:MSpecpp.Views"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="MSpecpp.Views.MainWindow"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="MSpecpp"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaTitleBarHeightHint="-1"
+        SystemDecorations="Full">
+    <Window.Styles>
+        <!--Prevent window from exceeding the border when maximized-->
+        <Style Selector="Window[WindowState=Maximized]">
+            <Setter Property="Padding" Value="6" />
+        </Style>
+    </Window.Styles>
+    <views:MainView />
+</Window>

@@ -1,0 +1,35 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:MSpecpp.ViewModels"
+             xmlns:c="clr-namespace:MSpecpp.Controls"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MSpecpp.Views.MainView"
+             x:DataType="vm:MainViewModel">
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainViewModel />
+    </Design.DataContext>
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" Grid.Column="2" Margin="32,0,0,0" >
+            <c:CaptionButtons Height="30" VerticalAlignment="Top"/>
+        </Border>
+        <TextBlock Grid.Column="0" Grid.Row="0" Padding="8,8,0,0" Text="{Binding Title}"/>
+        
+        <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" >
+            
+        </Grid>
+        
+        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Name="MainPanel">
+            <TextBlock Text="{Binding Information, Mode=TwoWay}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <Button Content="Read m/z text" HorizontalAlignment="Center" Click="Button_Click" />
+            <Slider Margin="40,0,40,0" x:Name="MainSlider" Maximum="1" Minimum="0" ValueChanged="Slider_ValueChanged"
+                    Value="{Binding ViewScale}" />
+            <TextBlock Text="{Binding #MainSlider.Value}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <c:SpectrumControl Name="SpectrumView" Width="1000" Height="400" />
+        </StackPanel>
+        
+    </Grid>
+</UserControl>

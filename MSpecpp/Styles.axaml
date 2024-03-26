@@ -1,0 +1,44 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Design.PreviewWith>
+        <Border Padding="20">
+            <!-- Add Controls for Previewer Here -->
+        </Border>
+    </Design.PreviewWith>
+
+    <!--For caption buttons-->
+    <Style Selector="Button.caption_button">
+        <Setter Property="Width" Value="48"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+    </Style>
+    <Style Selector="Path">
+        <Setter Property="Stretch" Value="Uniform" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Fill" Value="#fff1f1f1" />
+    </Style>
+    <Style Selector="Button.caption_button > Path">
+        <Setter Property="Width" Value="10"/>
+        <Setter Property="Height" Value="10"/>
+    </Style>
+    <Style Selector="Button.caption_button /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="CornerRadius" Value="0"/>
+    </Style>
+    <Style Selector="Button.caption_button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#40000000"/>
+    </Style>
+    <Style Selector="Button.caption_button:nth-last-child(1):pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Red"/>
+    </Style>
+    <Style Selector="Grid.caption_button_box:pointerover Path">
+        <Setter Property="IsVisible" Value="True"/>
+    </Style>
+    
+    <!--For spectrum card-->
+    <Style Selector="Border.card">
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+</Styles>
