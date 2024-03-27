@@ -5,6 +5,8 @@
              xmlns:vm="clr-namespace:MSpecpp.ViewModels"
              xmlns:c="clr-namespace:MSpecpp.Controls"
              xmlns:rs="using:RangeSlider.Avalonia.Controls"
+             xmlns:m="clr-namespace:MSpecpp"
+             xmlns:v="clr-namespace:MSpecpp.Views"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MSpecpp.Views.MainView"
              x:DataType="vm:MainViewModel">
@@ -13,23 +15,63 @@
          to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainViewModel />
     </Design.DataContext>
-    <Grid RowDefinitions="Auto,*" ColumnDefinitions="Auto,*,Auto">
-        <Border Grid.Row="0" Grid.Column="2" Margin="32,0,0,0" >
-            <c:CaptionButtons Height="30" VerticalAlignment="Top"/>
+    <Grid RowDefinitions="Auto,45,*">
+        <Border Grid.Row="0" PointerPressed="BeginMoveWindow" DoubleTapped="MaximizeOrRestoreWindow" Background="{DynamicResource Brush.Window}">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <TextBlock Grid.Column="0" Padding="12,8,0,0" FontSize="16" Text="{Binding Title}" />
+                <Border Grid.Column="2" Margin="32,0,0,0" HorizontalAlignment="Right">
+                    <c:CaptionButtons Height="30" VerticalAlignment="Top" />
+                </Border>
+            </Grid>
         </Border>
-        <TextBlock Grid.Column="0" Grid.Row="0" Padding="8,8,0,0" Text="{Binding Title}"/>
-        
-        <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" >
-            
+
+        <Border Grid.Row="1" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border0}">
+            <DockPanel Margin="0,4,0,8" LastChildFill="True" VerticalAlignment="Center">
+                <Button Padding="8,4,8,4" Margin="12,4,0,0" DockPanel.Dock="Left" Name="OpenFolderButton"
+                        Click="OpenFolderButton_OnClick">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource Icons.Folder.Open}" />
+                        <TextBlock Text="Open Folder" Margin="8,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <TextBox Margin="10,5,20,0" Text="{Binding OpenedDir, Mode=TwoWay}"></TextBox>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="100"></ColumnDefinition>
+                <ColumnDefinition Width="1"></ColumnDefinition>
+                <ColumnDefinition Width="5*" MinWidth="200"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <ScrollViewer Grid.Column="0" Padding="0,0,4,0" Background="{DynamicResource Brush.Contents}">
+                <Grid RowDefinitions="28,Auto,28,*">
+                    <TextBlock Grid.Row="0" Margin="8,4,0,0" Classes="subtitle" Text="Settings" />
+                    <StackPanel Grid.Row="1" Margin="0,4,0,4">
+                        <StackPanel Margin="8,0,0,0" Orientation="Vertical">
+                            <TextBlock Margin="0,0,0,0" Text="Target Count" HorizontalAlignment="Left" />
+                            <NumericUpDown Margin="0,4,10,0" Minimum="0" MinHeight="10" Value="{Binding TargetSelectionCount}" FormatString="0" />
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBlock Grid.Row="2" Margin="8,4,0,0" Classes="subtitle" Text="Folders" />
+                    <ListBox Grid.Row="3" Classes="folder_picker" Background="Transparent" Name="FolderSelector" SelectionMode="Single,Toggle"
+                             ItemsSource="{Binding CaseFolders}" SelectionChanged="FolderSelector_OnSelectionChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type m:CaseFolder}">
+                                <TextBlock Text="{Binding DisplayName}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </ScrollViewer>
+            <GridSplitter Grid.Column="1" />
+            <StackPanel Grid.Column="2" Name="MainPanel" Background="{StaticResource Brush.Window}">
+                <rs:RangeSlider Margin="40,0,40,0" MoveWholeRange="True" x:Name="MainSlider"
+                                LowerSelectedValue="{Binding ViewportSize.StartPos}"
+                                UpperSelectedValue="{Binding ViewportSize.EndPos}" Maximum="1" Minimum="0"
+                                IsThumbOverlap="True" />
+                <ScrollViewer Name="SpectrumViewer" Margin="20,0,20,0" AllowAutoHide="False" />
+            </StackPanel>
         </Grid>
-        
-        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Name="MainPanel">
-            <TextBlock Text="{Binding Information, Mode=TwoWay}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <Button Content="Read m/z text" HorizontalAlignment="Center" Click="Button_Click" />
-            <rs:RangeSlider Margin="40,0,40,0" x:Name="MainSlider" LowerSelectedValue="0" UpperSelectedValue="1" Maximum="1" Minimum="0" IsThumbOverlap="True" />
-            <TextBlock Text="Nothing" HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <c:SpectrumCard Name="SpectrumView" Padding="10" Height="400" DataContext="{Binding SpectrumViewModel}" />
-        </StackPanel>
-        
     </Grid>
 </UserControl>

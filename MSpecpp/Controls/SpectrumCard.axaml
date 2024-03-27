@@ -4,21 +4,28 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:MSpecpp.ViewModels"
              xmlns:c="clr-namespace:MSpecpp.Controls"
+             xmlns:v="clr-namespace:MSpecpp.Views"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="MSpecpp.Controls.SpectrumCard" 
+             x:Class="MSpecpp.Controls.SpectrumCard"
              x:DataType="vm:SpectrumViewModel">
-    <Border Classes="card" Padding="10" Background="#ff303030">
-        <Grid RowDefinitions="Auto,*" ColumnDefinitions="Auto,*" >
-            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding Id, StringFormat={}}" Padding="10,10,0,0" />
-            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" >
-                <TextBlock HorizontalAlignment="Right" Text="{Binding Variance, StringFormat='Variance={}'}" Padding="10,10,10,0" />
+    <Border Classes="card" Padding="10" Background="{DynamicResource Brush.Contents}" Margin="0,0,0,10">
+        <Grid RowDefinitions="Auto,*" ColumnDefinitions="Auto,*">
+            <CheckBox Grid.Row="0" Grid.Column="0" Margin="10,10,0,0" >
+                <TextBlock Text="{Binding Id}" />
+            </CheckBox>
+            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock HorizontalAlignment="Right" Text="{Binding Variance, StringFormat='Variance={}'}"
+                           Padding="10,10,10,0" />
                 <TextBlock HorizontalAlignment="Right" Text="{Binding Rms, StringFormat='RMS={}'}" Padding="10,10,10,0" />
-                <TextBlock HorizontalAlignment="Right" Text="{Binding Score, StringFormat='Score={}'}" Padding="10,10,10,0" />
+                <TextBlock HorizontalAlignment="Right" Text="{Binding Score, StringFormat='Score={}'}"
+                           Padding="10,10,10,0" />
             </StackPanel>
-            <Border Margin="10,10,10,10" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" BorderThickness="1" BorderBrush="Black" >
-                <c:SpectrumControl Name="SpectrumView" DataContext="{Binding MainSpectrum}" />
+            <Border Margin="10,10,10,0" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" BorderThickness="1"
+                    BorderBrush="{DynamicResource Brush.Border2}">
+                <c:SpectrumControl Name="SpectrumView" DataContext="{Binding MainSpectrum}" Height="200"
+                                   ViewportSize="{Binding $parent[v:MainView].((vm:MainViewModel)DataContext).ViewportSize, Mode=OneTime}" />
             </Border>
-            
+
         </Grid>
     </Border>
 </UserControl>

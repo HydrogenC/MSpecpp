@@ -10,31 +10,32 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Threading;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace MSpecpp.Controls
 {
     internal class SpectrumControl : Control
     {
-        public static readonly StyledProperty<float> StartMassProperty =
-            AvaloniaProperty.Register<SpectrumControl, float>(nameof(StartMass), 80);
-
-        public static readonly StyledProperty<float> EndMassProperty =
-            AvaloniaProperty.Register<SpectrumControl, float>(nameof(EndMass), 1000);
+        public static readonly StyledProperty<SpectrumViewport> ViewportSizeProperty =
+            AvaloniaProperty.Register<SpectrumControl, SpectrumViewport>(nameof(ViewportSize));
 
         public static readonly StyledProperty<Color> ForegroundProperty =
             AvaloniaProperty.Register<SpectrumControl, Color>(nameof(Foreground), Colors.White);
 
-        public float StartMass
+        public SpectrumControl()
         {
-            get => GetValue(StartMassProperty);
-            set => SetValue(StartMassProperty, value);
+            // Since the spectrum viewport is passed by reference, we don't need to assign
+            WeakReferenceMessenger.Default.Register<SpectrumViewport>(this,
+                (r, m) => { Dispatcher.UIThread.Post(DoUpdate); });
         }
 
-        public float EndMass
+        public SpectrumViewport ViewportSize
         {
-            get => GetValue(EndMassProperty);
-            set => SetValue(EndMassProperty, value);
+            get => GetValue(ViewportSizeProperty);
+            set => SetValue(ViewportSizeProperty, value);
         }
 
         public Color Foreground
@@ -44,65 +45,96 @@ namespace MSpecpp.Controls
         }
 
         private WriteableBitmap? bitmap;
+        private Spectrum? spectrum;
         private int sampleCount;
         private int[] bitmapData = [];
-        const int resolution = 1;
+        public const int Resolution = 1;
+        
+        // To avoid data race on bitmap when the bounds are changing quickly
+        private Mutex renderMutex = new(false);
+        private int renderTasksAlive = 0;
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
             if (change.Property == DataContextProperty ||
                 change.Property == BoundsProperty ||
-                change.Property == StartMassProperty ||
-                change.Property == EndMassProperty ||
+                change.Property == ViewportSizeProperty ||
                 change.Property == ForegroundProperty)
             {
-                InvalidateVisual();
+                // In case this is called from other threads
+                Dispatcher.UIThread.Post(DoUpdate);
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GraphYToImageY(float y, float yLowerBound, float yAspect, float bitmapHeight)
+        public void DoUpdate()
         {
-            return (int)MathF.Round((y - yLowerBound) * bitmapHeight / yAspect);
+            if (DataContext is Spectrum { Values.Length: > 0 } newSpec)
+            {
+                spectrum = newSpec;
+            }
+            else
+            {
+                spectrum = null;
+            }
+
+            // Allow up to two tasks for most: one running and one queued
+            if (renderTasksAlive >= 2)
+            {
+                return;
+            }
+
+            SpectrumViewport size = ViewportSize;
+            Color foreground = Foreground;
+            bitmap = null;
+            Task.Run(() =>
+            {
+                RedrawBitmap(size, (int)foreground.ToUInt32());
+                Dispatcher.UIThread.Post(InvalidateVisual);
+            });
         }
 
-        public override void Render(DrawingContext context)
+        private void RedrawBitmap(SpectrumViewport viewportSize, int color)
         {
+            Interlocked.Increment(ref renderTasksAlive);
+            renderMutex.WaitOne();
             var bitmap = GetBitmap();
             if (bitmap != null)
             {
                 Array.Clear(bitmapData, 0, bitmapData.Length);
-                if (DataContext is Spectrum { Values.Length: > 0 } spectrum)
+                if (spectrum != null)
                 {
-                    // Assign these to local variables since properties are slow
-                    float startMass = StartMass, endMass = EndMass;
-                    int startIndex = Array.FindIndex(spectrum.Values, (x) => x.Mass >= startMass);
-                    int endIndex = Array.FindLastIndex(spectrum.Values, (x) => x.Mass <= endMass);
-                    var spec = new ArraySegment<SpectrumValue>(spectrum.Values, startIndex, endIndex - startIndex + 1);
+                    // Viewport-related
+                    int startIndex = (int)(spectrum.Values.Length * viewportSize.StartPos);
+                    int endIndex = (int)(spectrum.Values.Length * viewportSize.EndPos);
+                    float yLowerLimit = viewportSize.YLowerBound;
+                    float yViewAspect = viewportSize.YHigherBound - viewportSize.YLowerBound;
 
+                    var spec = new ArraySegment<SpectrumValue>(spectrum.Values, startIndex,
+                        Math.Clamp(endIndex - startIndex, 1, int.MaxValue));
                     float[] intensities = spec.Select((x) => x.Intensity).ToArray();
-                    float maxHeight = intensities.Max();
-                    float yLowerLimit = -maxHeight * 0.05f;
-                    float yViewAspect = maxHeight * 1.1f;
                     sampleCount = spec.Count;
 
                     int endSample = 0;
                     float prevYMax, prevYMin;
                     prevYMax = prevYMin = -yLowerLimit / yViewAspect * bitmap.PixelSize.Height;
-                    for (int i = 0; i < bitmap.PixelSize.Width; i += resolution)
+                    for (int i = 0; i < bitmap.PixelSize.Width; i += Resolution)
                     {
-                        int endPoint = Math.Clamp(i + resolution, 0, bitmap.PixelSize.Width);
+                        int endPoint = Math.Clamp(i + Resolution, 0, bitmap.PixelSize.Width);
                         int startSample = endSample;
-                        endSample = (int)((double)endPoint / bitmap.PixelSize.Width * sampleCount) - 1;
-                        var segment = new ArraySegment<float>(intensities, startSample, endSample - startSample);
+                        // Avoid negative values
+                        endSample = Math.Clamp((int)((double)endPoint / bitmap.PixelSize.Width * sampleCount) - 1,
+                            startSample, int.MaxValue);
+                        // Make sure there is at least one sample
+                        var segment = new ArraySegment<float>(intensities, startSample,
+                            Math.Clamp(endSample - startSample, 1, int.MaxValue));
                         float yMax = Math.Clamp((segment.Max() - yLowerLimit) / yViewAspect * bitmap.PixelSize.Height,
                             0, bitmap.PixelSize.Height - 1);
                         float yMin = Math.Clamp((segment.Min() - yLowerLimit) / yViewAspect * bitmap.PixelSize.Height,
                             0, bitmap.PixelSize.Height - 1);
                         DrawPeak(bitmapData, bitmap.PixelSize, endPoint - i, i,
                             (int)MathF.Round(Math.Min(yMin, prevYMax)),
-                            (int)MathF.Round(Math.Max(yMax, prevYMin)));
+                            (int)MathF.Round(Math.Max(yMax, prevYMin)), color);
                         (prevYMax, prevYMin) = (yMax, yMin);
                     }
                 }
@@ -111,7 +143,14 @@ namespace MSpecpp.Controls
                 Marshal.Copy(bitmapData, 0, frameBuffer.Address, bitmapData.Length);
             }
 
+            renderMutex.ReleaseMutex();
+            Interlocked.Decrement(ref renderTasksAlive);
+        }
+
+        public override void Render(DrawingContext context)
+        {
             base.Render(context);
+            // context.DrawRectangle(new SolidColorBrush(Colors.Red), null, Bounds.WithX(0).WithY(0));
             if (bitmap != null)
             {
                 var rect = Bounds.WithX(0).WithY(0);
@@ -145,10 +184,8 @@ namespace MSpecpp.Controls
         /// <summary>
         /// Reference: https://github.com/stakira/OpenUtau/blob/master/OpenUtau/Controls/WaveformImage.cs#L139
         /// </summary>
-        private void DrawPeak(int[] data, PixelSize size, int drawWidth, int x, int y1, int y2)
+        private void DrawPeak(int[] data, PixelSize size, int drawWidth, int x, int y1, int y2, int color)
         {
-            int color = (int)Foreground.ToUInt32();
-
             // Draw the spectrum from down to up
             (y1, y2) = (size.Height - y1 - 1, size.Height - y2 - 1);
             if (y1 > y2)

@@ -1,16 +1,41 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using Avalonia.Controls;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace MSpecpp.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-    public static MainViewModel Instance { get; set; }
+    public MainViewModel()
+    {
+        viewportSize.PropertyChanged += ViewportSizeOnPropertyChanged;
+    }
 
-    [ObservableProperty] private SpectrumViewModel spectrumViewModel = new SpectrumViewModel();
+    private void ViewportSizeOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        WeakReferenceMessenger.Default.Send(ViewportSize);
+    }
+
+    public static MainViewModel Instance { get; set; }
 
     [ObservableProperty] private string information = "Press button to read mass spectrum!";
 
     [ObservableProperty] private string title = "MSpec++";
 
-    [ObservableProperty] public double viewScale = 1;
+    [ObservableProperty] private SpectrumViewport viewportSize = new()
+    {
+        StartPos = 0,
+        EndPos = 1,
+        YHigherBound = 160000,
+        YLowerBound = -1000
+    };
+
+    [ObservableProperty] public string openedDir = "";
+
+    [ObservableProperty] public ObservableCollection<CaseFolder> caseFolders = [];
+
+    [ObservableProperty] public int targetSelectionCount = 4;
 }
