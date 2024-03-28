@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
@@ -14,17 +15,9 @@ public partial class FolderSpectrumView : UserControl
 {
     private bool isLoaded = false;
 
-    public FolderSpectrumView(FolderSpectrumViewModel viewModel)
+    public FolderSpectrumView()
     {
         InitializeComponent();
-
-        DataContext = viewModel;
-        Task.Run(() => viewModel.CreateSpectrumViews(SpectrumLoadedCallback));
-        MainStackPanel.Children.Add(new TextBlock
-        {
-            Text = "Loading...",
-            HorizontalAlignment = HorizontalAlignment.Center
-        });
     }
 
     public void SpectrumLoadedCallback()
@@ -40,7 +33,7 @@ public partial class FolderSpectrumView : UserControl
                     DataContext = spec
                 });
             }
-            
+
             isLoaded = true;
         });
     }
@@ -58,5 +51,21 @@ public partial class FolderSpectrumView : UserControl
         {
             viewModel.SpectrumViewModels[i].IsSelected = i < count;
         }
+    }
+
+    // Try to release the resource to save memory
+    private void Control_OnUnloaded(object? sender, RoutedEventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            var viewModel = DataContext as FolderSpectrumViewModel;
+            viewModel.AssociatedFolder.ReleaseSpectrums();
+        });
+    }
+
+    private void Control_OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        var viewModel = DataContext as FolderSpectrumViewModel;
+        Task.Run(() => viewModel.CreateSpectrumViews(SpectrumLoadedCallback));
     }
 }

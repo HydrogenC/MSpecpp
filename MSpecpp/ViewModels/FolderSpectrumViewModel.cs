@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace MSpecpp.ViewModels;
 
-public class FolderSpectrumViewModel : ViewModelBase, IDisposable
+public class FolderSpectrumViewModel : ViewModelBase
 {
     public CaseFolder AssociatedFolder { get; init; }
 
@@ -28,11 +28,5 @@ public class FolderSpectrumViewModel : ViewModelBase, IDisposable
         // Sort spectrums by rms from large to small
         Array.Sort(SpectrumViewModels, ((a, b) => b.Rms.CompareTo(a.Rms)));
         callback();
-    }
-
-    public void Dispose()
-    {
-        // Release the read spectrums from memory
-        AssociatedFolder.ReleaseSpectrums();
     }
 }

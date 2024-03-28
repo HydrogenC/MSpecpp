@@ -5,8 +5,9 @@
              xmlns:vm="clr-namespace:MSpecpp.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MSpecpp.Views.FolderSpectrumView"
-             x:DataType="vm:FolderSpectrumViewModel">
+             x:DataType="vm:FolderSpectrumViewModel" 
+             Unloaded="Control_OnUnloaded" Loaded="Control_OnLoaded">
     <StackPanel Name="MainStackPanel">
-        
+        <TextBlock Text="Loading..." HorizontalAlignment="Center" Classes="bold_text" Margin="0,10,0,0" />
     </StackPanel>
 </UserControl>
