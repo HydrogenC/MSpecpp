@@ -60,6 +60,12 @@ public class Spectrum
         };
     }
 
+    public void ExportToTextFormat(string path)
+    {
+        File.WriteAllLines(path, Values.Select(
+            (x) => $"{x.Mass:0.0000} {x.Intensity:0}"));
+    }
+
     /// <summary>
     /// Reference: https://github.com/sgibb/readBrukerFlexData/blob/master/R/tof2mass-functions.R
     /// </summary>
@@ -85,6 +91,13 @@ public class Spectrum
         return sqrtMass * sqrtMass;
     }
 
+    public static bool ContainsBrukerFlex(string path)
+    {
+        string fidPath = Path.Combine(path, "1Ref", "fid");
+        string acquPath = Path.Combine(path, "1Ref", "acqu");
+        return File.Exists(fidPath) && File.Exists(acquPath);
+    }
+
     /// <summary>
     /// Reference: https://github.com/sgibb/readBrukerFlexData/blob/master/R/readBrukerFlexFile-functions.R
     /// </summary>
@@ -94,6 +107,11 @@ public class Spectrum
     {
         string fidPath = Path.Combine(path, "1Ref", "fid");
         string acquPath = Path.Combine(path, "1Ref", "acqu");
+
+        if (!File.Exists(fidPath) || !File.Exists(acquPath))
+        {
+            throw new FileNotFoundException($"{path} doesn't seem to contain bruker flex files! ");
+        }
 
         var acquLines = File.ReadAllLines(acquPath);
         Dictionary<string, string> acquDict = new();

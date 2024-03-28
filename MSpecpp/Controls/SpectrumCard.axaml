@@ -10,13 +10,13 @@
              x:DataType="vm:SpectrumViewModel">
     <Border Classes="card" Padding="10" Background="{DynamicResource Brush.Contents}" Margin="0,0,0,10">
         <Grid RowDefinitions="Auto,*" ColumnDefinitions="Auto,*">
-            <CheckBox Grid.Row="0" Grid.Column="0" Margin="10,10,0,0" >
+            <CheckBox Grid.Row="0" Grid.Column="0" Margin="10,0,0,0" IsChecked="{Binding IsSelected}">
                 <TextBlock Text="{Binding Id}" />
             </CheckBox>
             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                 <TextBlock HorizontalAlignment="Right" Text="{Binding Variance, StringFormat='Variance={}'}"
                            Padding="10,10,10,0" />
-                <TextBlock HorizontalAlignment="Right" Text="{Binding Rms, StringFormat='RMS={}'}" Padding="10,10,10,0" />
+                <TextBlock HorizontalAlignment="Right" Text="{Binding Rms}" Classes="bold_text" Padding="10,10,10,0" />
                 <TextBlock HorizontalAlignment="Right" Text="{Binding Score, StringFormat='Score={}'}"
                            Padding="10,10,10,0" />
             </StackPanel>

@@ -49,7 +49,7 @@ namespace MSpecpp.Controls
         private int sampleCount;
         private int[] bitmapData = [];
         public const int Resolution = 1;
-        
+
         // To avoid data race on bitmap when the bounds are changing quickly
         private Mutex renderMutex = new(false);
         private int renderTasksAlive = 0;

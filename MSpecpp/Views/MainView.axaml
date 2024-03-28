@@ -9,14 +9,24 @@
              xmlns:v="clr-namespace:MSpecpp.Views"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MSpecpp.Views.MainView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel" Name="TheView">
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
          to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainViewModel />
     </Design.DataContext>
-    <Grid RowDefinitions="Auto,45,*">
-        <Border Grid.Row="0" PointerPressed="BeginMoveWindow" DoubleTapped="MaximizeOrRestoreWindow" Background="{DynamicResource Brush.Window}">
+    <Grid RowDefinitions="Auto,48,*">
+        <Panel Name="FullscreenOverlay" Grid.Row="1" Grid.RowSpan="2" IsVisible="False" Background="#7F000000"
+               ZIndex="1">
+            <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Name="ExportLabel" Classes="bold_text" Text="Exporting" />
+                <ProgressBar Name="ExportProgressBar" Margin="0 10" Height="20"
+                             Minimum="0" Maximum="100" Value="0" />
+            </StackPanel>
+        </Panel>
+
+        <Border Grid.Row="0" PointerPressed="BeginMoveWindow" DoubleTapped="MaximizeOrRestoreWindow"
+                Background="{DynamicResource Brush.Window}">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <TextBlock Grid.Column="0" Padding="12,8,0,0" FontSize="16" Text="{Binding Title}" />
                 <Border Grid.Column="2" Margin="32,0,0,0" HorizontalAlignment="Right">
@@ -26,15 +36,24 @@
         </Border>
 
         <Border Grid.Row="1" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border0}">
-            <DockPanel Margin="0,4,0,8" LastChildFill="True" VerticalAlignment="Center">
-                <Button Padding="8,4,8,4" Margin="12,4,0,0" DockPanel.Dock="Left" Name="OpenFolderButton"
+            <DockPanel Margin="0,4,0,6" LastChildFill="True" VerticalAlignment="Center">
+                <Button VerticalAlignment="Stretch" Padding="8,4,8,4" Margin="12,5,0,0" DockPanel.Dock="Left"
+                        Name="OpenFolderButton"
                         Click="OpenFolderButton_OnClick">
                     <StackPanel Orientation="Horizontal">
                         <Path Data="{StaticResource Icons.Folder.Open}" />
-                        <TextBlock Text="Open Folder" Margin="8,0,0,0" VerticalAlignment="Center" />
+                        <TextBlock Classes="bold_text" Text="Open Folder" Margin="8,0,0,0" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-                <TextBox Margin="10,5,20,0" Text="{Binding OpenedDir, Mode=TwoWay}"></TextBox>
+                <Button VerticalAlignment="Stretch" Padding="8,4,8,4" Margin="0,5,12,0" DockPanel.Dock="Right"
+                        Name="ExportTxtButton"
+                        Click="ExportTxtButton_OnClick">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource Icons.Save}" />
+                        <TextBlock Classes="bold_text" Text="Export Txt" Margin="8,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <TextBox Margin="10,5,10,0" Text="{Binding OpenedDir, Mode=TwoWay}"></TextBox>
             </DockPanel>
         </Border>
 
@@ -50,28 +69,68 @@
                     <StackPanel Grid.Row="1" Margin="0,4,0,4">
                         <StackPanel Margin="8,0,0,0" Orientation="Vertical">
                             <TextBlock Margin="0,0,0,0" Text="Target Count" HorizontalAlignment="Left" />
-                            <NumericUpDown Margin="0,4,10,0" Minimum="0" MinHeight="10" Value="{Binding TargetSelectionCount}" FormatString="0" />
+                            <NumericUpDown Margin="0,4,10,0" Minimum="0" MinHeight="10"
+                                           Value="{Binding TargetSelectionCount}" FormatString="0" />
                         </StackPanel>
                     </StackPanel>
                     <TextBlock Grid.Row="2" Margin="8,4,0,0" Classes="subtitle" Text="Folders" />
-                    <ListBox Grid.Row="3" Classes="folder_picker" Background="Transparent" Name="FolderSelector" SelectionMode="Single,Toggle"
+                    <ListBox Grid.Row="3" Classes="folder_picker" Background="Transparent" Name="FolderSelector"
+                             SelectionMode="Single,Toggle"
                              ItemsSource="{Binding CaseFolders}" SelectionChanged="FolderSelector_OnSelectionChanged">
                         <ListBox.ItemTemplate>
                             <DataTemplate DataType="{x:Type m:CaseFolder}">
-                                <TextBlock Text="{Binding DisplayName}" />
+                                <Grid>
+                                    <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center"
+                                               Text="{Binding DisplayName}" Classes.folder_id="True"
+                                               Classes.confirmed="{Binding Confirmed}" />
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                   Text="{Binding SelectedCount}" Classes="bold_text">
+                                            <TextBlock.Foreground>
+                                                <MultiBinding
+                                                    Converter="{x:Static vm:Converters.CountTextColorConverter}">
+                                                    <Binding Path="SelectedCount"></Binding>
+                                                    <Binding
+                                                        Path="$parent[v:MainView].((vm:MainViewModel)DataContext).TargetSelectionCount">
+                                                    </Binding>
+                                                </MultiBinding>
+                                            </TextBlock.Foreground>
+                                        </TextBlock>
+                                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                   Text="/" />
+                                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                   Classes="bold_text"
+                                                   Text="{Binding $parent[v:MainView].((vm:MainViewModel)DataContext).TargetSelectionCount}" />
+                                    </StackPanel>
+                                </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
                 </Grid>
             </ScrollViewer>
             <GridSplitter Grid.Column="1" />
-            <StackPanel Grid.Column="2" Name="MainPanel" Background="{StaticResource Brush.Window}">
-                <rs:RangeSlider Margin="40,0,40,0" MoveWholeRange="True" x:Name="MainSlider"
+            <Grid RowDefinitions="Auto,*,60" Grid.Column="2" Name="MainPanel"
+                  Background="{StaticResource Brush.Window}">
+                <rs:RangeSlider Margin="40,0,40,0" MoveWholeRange="True" x:Name="MainSlider" Grid.Row="0"
                                 LowerSelectedValue="{Binding ViewportSize.StartPos}"
                                 UpperSelectedValue="{Binding ViewportSize.EndPos}" Maximum="1" Minimum="0"
                                 IsThumbOverlap="True" />
-                <ScrollViewer Name="SpectrumViewer" Margin="20,0,20,0" AllowAutoHide="False" />
-            </StackPanel>
+                <ScrollViewer Name="SpectrumViewer" Margin="20,0,0,0" Padding="0,0,20,0" AllowAutoHide="False"
+                              Grid.Row="1" />
+                <Border Grid.Row="2" Background="{DynamicResource Brush.ToolBar}" BorderThickness="0,1,0,0"
+                        BorderBrush="{DynamicResource Brush.Border0}" Padding="0,10,0,10">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Padding="8,0,8,0" Margin="0,0,12,0" DockPanel.Dock="Left" Name="SelectTopButton"
+                                Click="SelectTopButton_OnClick" VerticalAlignment="Stretch">
+                            <TextBlock Text="Select Top" VerticalAlignment="Center" Classes="bold_text" />
+                        </Button>
+                        <Button Padding="8,4,8,4" Margin="0,0,12,0" DockPanel.Dock="Left" Name="ConfirmButton"
+                                Click="ConfirmButton_OnClick" VerticalAlignment="Stretch">
+                            <TextBlock Text="Confirm" VerticalAlignment="Center" Classes="bold_text" />
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

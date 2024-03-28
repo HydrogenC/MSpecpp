@@ -18,5 +18,9 @@
             <Setter Property="Padding" Value="6" />
         </Style>
     </Window.Styles>
-    <views:MainView Background="{DynamicResource Brush.Window}" />
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Enter" Command="{Binding ElementName=TheView, Path=ConfirmCommand}" />
+        <KeyBinding Gesture="A" Command="{Binding ElementName=TheView, Path=SelectTopCommand}" />
+    </Window.KeyBindings>
+    <views:MainView Background="{DynamicResource Brush.Window}" Name="TheView" />
 </Window>

@@ -87,4 +87,7 @@
     <SolidColorBrush x:Key="Brush.Accent1" Color="{DynamicResource Color.Accent1}" />
     <SolidColorBrush x:Key="Brush.Accent1Hovered" Color="{DynamicResource Color.Accent1Hovered}" />
     <SolidColorBrush x:Key="Brush.Accent2" Color="{DynamicResource Color.Accent2}" />
+    
+    <SolidColorBrush x:Key="Brush.TooFew" Color="#FF8B8000" />
+    <SolidColorBrush x:Key="Brush.Enough" Color="#FF008000" />
 </ResourceDictionary>
