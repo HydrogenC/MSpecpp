@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -81,5 +82,8 @@ public partial class MainViewModel : ViewModelBase
             progressCallback(progressIndex, totalCases);
             progressIndex++;
         }
+        
+        // FIXME: window specific-code
+        Process.Start("explorer.exe", path);
     }
 }
