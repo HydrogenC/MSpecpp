@@ -28,7 +28,7 @@ namespace MSpecpp.Controls
             AvaloniaProperty.Register<SpectrumControl, int>(nameof(ViewportSize), 0);
 
         public static readonly StyledProperty<Color> ForegroundProperty =
-            AvaloniaProperty.Register<SpectrumControl, Color>(nameof(Foreground), Colors.White);
+            AvaloniaProperty.Register<SpectrumControl, Color>(nameof(Foreground));
 
         public SpectrumControl()
         {
@@ -157,7 +157,7 @@ namespace MSpecpp.Controls
                         int startPeakIndex = Array.FindIndex(spectrum.Peaks, (x) => x >= startIndex);
                         int endPeakIndex = Array.FindLastIndex(spectrum.Peaks, (x) => x < endIndex);
 
-                        if (startPeakIndex >= 0 || endPeakIndex >= 0)
+                        if (startPeakIndex >= 0 && endPeakIndex >= 0)
                         {
                             for (int i = startPeakIndex; i <= endPeakIndex; i++)
                             {

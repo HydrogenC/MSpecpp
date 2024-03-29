@@ -28,6 +28,7 @@
             <Color x:Key="Color.Accent1">#FF4295FF</Color>
             <Color x:Key="Color.Accent1Hovered">#FF529DFB</Color>
             <Color x:Key="Color.Accent2">#4C007ACC</Color>
+			<Color x:Key="Color.Spectrum">#FF000000</Color>
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
@@ -56,6 +57,7 @@
             <Color x:Key="Color.Accent1">#FF007ACC</Color>
             <Color x:Key="Color.Accent1Hovered">#FF006BBE</Color>
             <Color x:Key="Color.Accent2">#8C007ACC</Color>
+			<Color x:Key="Color.Spectrum">#FFFFFFFF</Color>
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
@@ -87,7 +89,7 @@
     <SolidColorBrush x:Key="Brush.Accent1" Color="{DynamicResource Color.Accent1}" />
     <SolidColorBrush x:Key="Brush.Accent1Hovered" Color="{DynamicResource Color.Accent1Hovered}" />
     <SolidColorBrush x:Key="Brush.Accent2" Color="{DynamicResource Color.Accent2}" />
-    
+	<SolidColorBrush x:Key="Brush.Spectrum" Color="{DynamicResource Color.Spectrum}" />
     <SolidColorBrush x:Key="Brush.TooFew" Color="#FF8B8000" />
     <SolidColorBrush x:Key="Brush.Enough" Color="#FF008000" />
 </ResourceDictionary>

@@ -8,7 +8,7 @@
     <Grid Classes="caption_button_box">
         <StackPanel Orientation="Horizontal">
             <Button Classes="caption_button" Click="MinimizeWindow">
-                <Path Data="{StaticResource Icons.Window.Minimize}"/>
+                <Path Data="{StaticResource Icons.Window.Minimize}" />
             </Button>
             <Button Classes="caption_button" Click="MaximizeOrRestoreWindow">
                 <Path Data="{Binding $parent[Window].WindowState, Converter={x:Static v:MainWindow.ToMaxOrRestoreIcon}}"/>
