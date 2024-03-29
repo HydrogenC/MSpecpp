@@ -51,13 +51,25 @@ public partial class CaseFolder : ObservableObject
 
     public Spectrum[]? Spectrums { get; set; }
 
-    public void LoadSpectrums()
+    public void LoadSpectrums(bool calcPeaks = false)
     {
         // Assume that every dict 
         Spectrums = new Spectrum[SelectedDict.Count];
         var iterator = SelectedDict.Zip(Enumerable.Range(0, SelectedDict.Count));
-        Parallel.ForEach(iterator,
-            (pair) => { Spectrums[pair.Second] = Spectrum.ReadFromBrukerFlex(pair.First.Key); });
+        if (calcPeaks)
+        {
+            Parallel.ForEach(iterator,
+                (pair) =>
+                {
+                    Spectrums[pair.Second] = Spectrum.ReadFromBrukerFlex(pair.First.Key);
+                    Spectrums[pair.Second].FindPeaks(MainViewModel.Instance.HalfWindowSize, MainViewModel.Instance.Snr);
+                });
+        }
+        else
+        {
+            Parallel.ForEach(iterator,
+                (pair) => { Spectrums[pair.Second] = Spectrum.ReadFromBrukerFlex(pair.First.Key); });
+        }
     }
 
     public void ReleaseSpectrums()

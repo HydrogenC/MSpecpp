@@ -8,62 +8,120 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using MathNet.Numerics;
+using MathNet.Numerics.Statistics;
 using MSpecpp.ViewModels;
 
 namespace MSpecpp;
 
-/// <summary>
-/// Represents a pair of a mass and an intensity. 
-/// </summary>
-public struct SpectrumValue(float m, float i)
-{
-    public float Mass = m;
-    public float Intensity = i;
-}
-
 public class Spectrum
 {
-    public SpectrumValue[] Values { get; set; }
+    public float[] Masses { get; set; }
+
+    public float[] Intensities { get; set; }
+
+    public int[]? Peaks { get; set; }
 
     public string FilePath { get; set; }
 
-    public int Length => Values.Length;
-
-    public float CalcRms()
-    {
-        float rms = 0;
-        foreach (var val in Values)
-        {
-            rms += val.Intensity * val.Intensity;
-        }
-
-        return MathF.Sqrt(rms / Length);
-    }
+    public int Length => Masses.Length;
 
     public static Spectrum ReadFromTextFormat(string path)
     {
         var lines = File.ReadAllLines(path);
-        List<SpectrumValue> spectrumValues = new(lines.Length);
+        float[] massValues = new float[lines.Length];
+        float[] intensitiesValues = new float[lines.Length];
 
+        var index = 0;
         foreach (var line in lines)
         {
             int posSpace = line.IndexOf(' ');
-            float mass = float.Parse(line.Substring(0, posSpace));
-            float intens = float.Parse(line.Substring(posSpace + 1));
-            spectrumValues.Add(new SpectrumValue(mass, intens));
+            massValues[index] = float.Parse(line.Substring(0, posSpace));
+            intensitiesValues[index] = float.Parse(line.Substring(posSpace + 1));
+            index++;
         }
 
         return new Spectrum
         {
-            Values = [.. spectrumValues],
+            Masses = massValues,
+            Intensities = intensitiesValues,
             FilePath = path
         };
     }
 
+    public float CalcMean()
+    {
+        float mean = 0;
+        foreach (var item in Intensities)
+        {
+            mean += item / Intensities.Length;
+        }
+
+        return mean;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="halfWindowSize">Half window size, measured in array index</param>
+    /// <param name="snr">Signal-to-noise ratio</param>
+    /// <param name="mean">The mean value, calculated if not provided</param>
+    public void FindPeaks(int halfWindowSize, float snr = 2, float? mean = null)
+    {
+        mean ??= CalcMean();
+
+        // Assume that the span is equal
+        var span = Masses[1] - Masses[0];
+
+        // Calculate noise via MAD
+        const float constant = 1.4826f;
+        float noise = constant * Intensities.Select((x) => MathF.Abs(x - mean.Value)).Median();
+
+        // Use monotone queue to speed up
+        LinkedList<int> monoQueue = new();
+
+        for (int i = 0; i < halfWindowSize; i++)
+        {
+            Enqueue(i);
+        }
+
+        List<int> peaks = [];
+        for (int i = 0; i < Length; i++)
+        {
+            if (i == monoQueue.First.Value && Intensities[monoQueue.First.Value] > snr * noise)
+            {
+                peaks.Add(i);
+            }
+
+            if (i + halfWindowSize < Length)
+            {
+                Enqueue(i + halfWindowSize);
+            }
+
+            // Kick values that are out of window
+            while (monoQueue.Count > 0 && monoQueue.First.Value <= i - halfWindowSize)
+            {
+                monoQueue.RemoveFirst();
+            }
+        }
+
+        Peaks = peaks.ToArray();
+        return;
+
+        void Enqueue(int index)
+        {
+            while (monoQueue.Count > 0 && Intensities[monoQueue.Last.Value] < Intensities[index])
+            {
+                monoQueue.RemoveLast();
+            }
+
+            monoQueue.AddLast(index);
+        }
+    }
+
     public void ExportToTextFormat(string path)
     {
-        File.WriteAllLines(path, Values.Select(
-            (x) => $"{x.Mass:0.0000} {x.Intensity:0}"));
+        File.WriteAllLines(path, Enumerable.Zip(Masses, Intensities).Select(
+            (x) => $"{x.First:0.0000} {x.Second:0}"));
     }
 
     /// <summary>
@@ -221,10 +279,11 @@ public class Spectrum
             }
         }
 
+        // It's guaranteed that the length of the two arrays are equal
         return new Spectrum
         {
-            Values = intensities.Zip(tofs)
-                .Select((tuple) => new SpectrumValue((float)tuple.Second, tuple.First)).ToArray(),
+            Intensities = intensities.Select((x) => (float)x).ToArray(),
+            Masses = tofs.Select((x) => (float)x).ToArray(),
             FilePath = path
         };
     }

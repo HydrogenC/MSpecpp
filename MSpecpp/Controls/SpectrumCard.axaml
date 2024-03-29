@@ -14,18 +14,34 @@
                 <TextBlock Text="{Binding Id}" />
             </CheckBox>
             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                <TextBlock HorizontalAlignment="Right" Text="{Binding Variance, StringFormat='Variance={}'}"
-                           Padding="10,10,10,0" />
-                <TextBlock HorizontalAlignment="Right" Text="{Binding Rms}" Classes="bold_text" Padding="10,10,10,0" />
-                <TextBlock HorizontalAlignment="Right" Text="{Binding Score, StringFormat='Score={}'}"
-                           Padding="10,10,10,0" />
+                <TextBlock HorizontalAlignment="Right" Text="{Binding Sd, StringFormat='S.D = {0}'}"
+                           Classes="bold_text" Padding="10,10,10,0" />
+                <TextBlock HorizontalAlignment="Right" Text="{Binding Mean, StringFormat='Mean = {0}'}"
+                           Classes="bold_text" Padding="10,10,10,0" />
+                <TextBlock HorizontalAlignment="Right" Text="{Binding Score, StringFormat='Score = {0:0.00}'}"
+                           Classes="bold_text" Padding="10,10,10,0" />
             </StackPanel>
-            <Border Margin="10,10,10,0" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" BorderThickness="1"
-                    BorderBrush="{DynamicResource Brush.Border2}">
-                <c:SpectrumControl Name="SpectrumView" DataContext="{Binding MainSpectrum}" Height="200"
-                                   ViewportSize="{Binding $parent[v:MainView].((vm:MainViewModel)DataContext).ViewportSize, Mode=OneTime}" />
-            </Border>
-
+            <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="34,*" RowDefinitions="*,34"
+                  Margin="10,10,10,0">
+                <c:VerticalAxisTicksControl Grid.Row="0" Grid.Column="0" Margin="0,1,0,1"
+                                            ViewportSize="{Binding $parent[v:MainView].((vm:MainViewModel)DataContext).ViewportSize, Mode=OneTime}">
+                    <c:VerticalAxisTicksControl.Stroke>
+                        <Pen Thickness="1" Brush="{DynamicResource Brush.FG2}" />
+                    </c:VerticalAxisTicksControl.Stroke>
+                </c:VerticalAxisTicksControl>
+                <Border Grid.Row="0" Grid.Column="1" BorderThickness="1"
+                        BorderBrush="{DynamicResource Brush.Border2}" HorizontalAlignment="Stretch">
+                    <c:SpectrumControl Name="SpectrumView" DataContext="{Binding MainSpectrum}"
+                                       Height="200"
+                                       ViewportSize="{Binding $parent[v:MainView].((vm:MainViewModel)DataContext).ViewportSize, Mode=OneTime}" />
+                </Border>
+                <c:HorizontalAxisTicksControl Grid.Row="1" Grid.Column="1" Margin="0,1,0,1"
+                                              AssociatedSpectrum="{Binding MainSpectrum}">
+                    <c:HorizontalAxisTicksControl.Stroke>
+                        <Pen Thickness="1" Brush="{DynamicResource Brush.FG2}" />
+                    </c:HorizontalAxisTicksControl.Stroke>
+                </c:HorizontalAxisTicksControl>
+            </Grid>
         </Grid>
     </Border>
 </UserControl>

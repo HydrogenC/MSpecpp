@@ -50,29 +50,33 @@ public partial class SpectrumViewModel : ViewModelBase
 
     private void UpdateSpectrumInfo()
     {
-        int len = MainSpectrum.Values.Length;
+        int len = MainSpectrum.Length;
+        Mean = MainSpectrum.CalcMean();
 
-        // Assigning observale properties might be slow, so we use local variables in calculation
-        float rmsSqared = 0, maxValueTemp = 0;
-        foreach (var item in MainSpectrum.Values)
+        // Assigning observable properties might be slow, so we use local variables in calculation
+        float rmsSqared = 0, maxValueTemp = 0, sdTemp = 0;
+        foreach (var item in MainSpectrum.Intensities)
         {
-            rmsSqared += item.Intensity * item.Intensity / len;
-            maxValueTemp = MathF.Max(maxValueTemp, item.Intensity);
+            sdTemp += (item - Mean) * (item - Mean) / len;
+            rmsSqared += item * item / len;
+            maxValueTemp = MathF.Max(maxValueTemp, item);
         }
 
+        Sd = MathF.Sqrt(sdTemp);
         MaxValue = maxValueTemp;
-        Score = Variance = Rms = MathF.Sqrt(rmsSqared);
     }
 
-    [ObservableProperty] public string id;
+    [ObservableProperty] private string id;
 
-    [ObservableProperty] public float rms;
+    [ObservableProperty] private float rms;
 
-    [ObservableProperty] public float maxValue;
+    [ObservableProperty] private float mean;
 
-    [ObservableProperty] public float score;
+    [ObservableProperty] private float maxValue;
 
-    [ObservableProperty] public float variance;
+    [ObservableProperty] private float score;
 
-    [ObservableProperty] public bool isSelected;
+    [ObservableProperty] private float sd;
+
+    [ObservableProperty] private bool isSelected;
 }

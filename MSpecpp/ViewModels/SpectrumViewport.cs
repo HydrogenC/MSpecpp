@@ -15,4 +15,12 @@ public partial class SpectrumViewport : ObservableObject
     [ObservableProperty] private float yLowerBound;
 
     [ObservableProperty] private float yHigherBound;
+
+    public static SpectrumViewport Dummy => new()
+    {
+        StartPos = 0,
+        EndPos = 1,
+        YHigherBound = 50,
+        YLowerBound = -10
+    };
 };

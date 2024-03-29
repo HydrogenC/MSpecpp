@@ -36,11 +36,17 @@ public partial class MainViewModel : ViewModelBase
         YLowerBound = -1000
     };
 
-    [ObservableProperty] public string openedDir = "";
+    [ObservableProperty] private string openedDir = "";
 
-    [ObservableProperty] public ObservableCollection<CaseFolder> caseFolders = [];
+    [ObservableProperty] private ObservableCollection<CaseFolder> caseFolders = [];
 
-    [ObservableProperty] public int targetSelectionCount = 4;
+    [ObservableProperty] private int targetSelectionCount = 4;
+
+    [ObservableProperty] private bool showPeaks = true;
+
+    [ObservableProperty] private int halfWindowSize = 70;
+
+    [ObservableProperty] private float snr = 2;
 
     public void ExportSelectedToText(string path, Action<int, int> progressCallback)
     {
@@ -60,6 +66,7 @@ public partial class MainViewModel : ViewModelBase
             // If not loaded, then load the spectrums into memory
             if (needToLoad)
             {
+                // We don't need peaks for that
                 folder.LoadSpectrums();
             }
 
