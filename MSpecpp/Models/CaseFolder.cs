@@ -10,11 +10,14 @@ namespace MSpecpp;
 
 public partial class CaseFolder : ObservableObject
 {
-    public CaseFolder(string folderPath)
+    public CaseFolder(string folderPath, bool loadSubDirs = true)
     {
         FolderPath = folderPath;
         Confirmed = false;
-        ReloadSubDirectories();
+        if (loadSubDirs)
+        {
+            ReloadSubDirectories();
+        }
     }
 
     public void ReloadSubDirectories()
@@ -37,6 +40,8 @@ public partial class CaseFolder : ObservableObject
                 }
             }
         }
+
+        SelectedCount = SelectedDict.Count(pair => pair.Value);
     }
 
     public string FolderPath { get; set; }

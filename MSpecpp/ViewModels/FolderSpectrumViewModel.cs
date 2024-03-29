@@ -18,12 +18,12 @@ public class FolderSpectrumViewModel : ViewModelBase
 
     public void CreateSpectrumViews(Action callback)
     {
-        AssociatedFolder.LoadSpectrums(MainViewModel.Instance.ShowPeaks);
+        AssociatedFolder.LoadSpectrums(MainViewModel.Instance.PeakCount > 0);
 
         SpectrumViewModels = AssociatedFolder.Spectrums.Select((x) => new SpectrumViewModel(AssociatedFolder, x))
             .ToArray();
         var batchMax = SpectrumViewModels.Max((x) => x.MaxValue);
-        MainViewModel.Instance.ViewportSize.YHigherBound = batchMax * 1.02f;
+        MainViewModel.Instance.ViewportSize.YHigherBound = batchMax * 1.1f;
         MainViewModel.Instance.ViewportSize.YLowerBound = -batchMax * 0.02f;
 
         float batchMean = 0f;

@@ -72,7 +72,8 @@
                             <NumericUpDown Margin="0,4,10,0" Minimum="0" MinHeight="10"
                                            Value="{Binding TargetSelectionCount}" FormatString="0" />
                         </StackPanel>
-                        <CheckBox Margin="8,0,0,10" Name="ShowPeaksBox" IsChecked="{Binding ShowPeaks}">
+                        <CheckBox Margin="8,0,0,10" Name="ShowPeaksBox" IsChecked="True"
+                                  IsCheckedChanged="ShowPeaksBox_OnIsCheckedChanged">
                             <TextBlock Margin="0,0,0,0" Text="Show Peaks" HorizontalAlignment="Left" />
                         </CheckBox>
                         <StackPanel Margin="8,0,0,10" Orientation="Vertical"
@@ -81,11 +82,17 @@
                             <NumericUpDown Margin="0,4,10,0" Minimum="0" MinHeight="10"
                                            Value="{Binding HalfWindowSize}" FormatString="0" />
                         </StackPanel>
-                        <StackPanel Margin="8,0,0,0" Orientation="Vertical"
+                        <StackPanel Margin="8,0,0,10" Orientation="Vertical"
                                     IsVisible="{Binding ElementName=ShowPeaksBox, Path=IsChecked}">
                             <TextBlock Margin="0,0,0,0" Text="SNR" HorizontalAlignment="Left" />
                             <NumericUpDown Margin="0,4,10,0" Minimum="0" MinHeight="10" Increment="0.1"
                                            Value="{Binding Snr}" FormatString="0.0" />
+                        </StackPanel>
+                        <StackPanel Margin="8,0,0,0" Orientation="Vertical"
+                                    IsVisible="{Binding ElementName=ShowPeaksBox, Path=IsChecked}">
+                            <TextBlock Margin="0,0,0,0" Text="Peak Count" HorizontalAlignment="Left" />
+                            <NumericUpDown Margin="0,4,10,0" Minimum="0" MinHeight="10"
+                                           Value="{Binding PeakCount}" FormatString="0" />
                         </StackPanel>
                     </StackPanel>
                     <TextBlock Grid.Row="2" Margin="8,4,0,0" Classes="subtitle" Text="Folders" />

@@ -17,6 +17,7 @@
     <Application.Styles>
         <fluent:RangeSliderTheme />
         <FluentTheme />
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
         <StyleInclude Source="/Styles.axaml" />
     </Application.Styles>
 </Application>

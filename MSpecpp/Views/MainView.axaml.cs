@@ -17,6 +17,9 @@ namespace MSpecpp.Views;
 
 public partial class MainView : UserControl
 {
+    // To restore the peak counts when show peaks are enabled
+    private int peakCountTemp = 5;
+
     public MainView()
     {
         InitializeComponent();
@@ -50,13 +53,7 @@ public partial class MainView : UserControl
         }
 
         SpectrumViewer.Content = PlaceholderBlock;
-
-        MainViewModel.Instance.CaseFolders.Clear();
-        MainViewModel.Instance.OpenedDir = selected[0].Path.LocalPath;
-        foreach (var dir in Directory.EnumerateDirectories(selected[0].Path.LocalPath))
-        {
-            MainViewModel.Instance.CaseFolders.Add(new CaseFolder(dir));
-        }
+        MainViewModel.Instance.OpenFolder(selected[0].Path.LocalPath);
     }
 
     private void FolderSelector_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -106,6 +103,9 @@ public partial class MainView : UserControl
                 FolderSelector.SelectedIndex++;
             }
         }
+
+        // Save config
+        MainViewModel.Instance.SaveConfig(SettingsModel.DefaultConfigPath);
     }
 
     public RelayCommand ConfirmCommand { get; private set; }
@@ -157,5 +157,17 @@ public partial class MainView : UserControl
                 ExportLabel.Text = "Exporting";
             }
         });
+    }
+
+    private void ShowPeaksBox_OnIsCheckedChanged(object? sender, RoutedEventArgs e)
+    {
+        if (ShowPeaksBox.IsChecked.Value)
+        {
+            MainViewModel.Instance.PeakCount = peakCountTemp;
+        }
+        else
+        {
+            MainViewModel.Instance.PeakCount = 0;
+        }
     }
 }

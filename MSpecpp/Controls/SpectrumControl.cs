@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Messaging;
+using SkiaSharp;
 
 namespace MSpecpp.Controls
 {
@@ -22,6 +23,9 @@ namespace MSpecpp.Controls
     {
         public static readonly StyledProperty<SpectrumViewport> ViewportSizeProperty =
             AvaloniaProperty.Register<SpectrumControl, SpectrumViewport>(nameof(ViewportSize), SpectrumViewport.Dummy);
+
+        public static readonly StyledProperty<int> PeakCountProperty =
+            AvaloniaProperty.Register<SpectrumControl, int>(nameof(ViewportSize), 0);
 
         public static readonly StyledProperty<Color> ForegroundProperty =
             AvaloniaProperty.Register<SpectrumControl, Color>(nameof(Foreground), Colors.White);
@@ -31,11 +35,6 @@ namespace MSpecpp.Controls
             // Since the spectrum viewport is passed by reference, we don't need to assign
             WeakReferenceMessenger.Default.Register<SpectrumViewport>(this,
                 (r, m) => { Dispatcher.UIThread.Post(DoUpdate); });
-            fontTypeface = new Typeface("Arial");
-
-            object? brushResource;
-            TryGetResource("Brush.FG2", ActualThemeVariant, out brushResource);
-            textBrush = brushResource as IBrush;
         }
 
         public SpectrumViewport ViewportSize
@@ -50,15 +49,16 @@ namespace MSpecpp.Controls
             set => SetValue(ForegroundProperty, value);
         }
 
+        public int PeakCount
+        {
+            get => GetValue(PeakCountProperty);
+            set => SetValue(PeakCountProperty, value);
+        }
+
         private WriteableBitmap? bitmap;
         private Spectrum? spectrum;
         private int sampleCount;
-        private uint[] bitmapData = [];
         public const int Resolution = 1;
-        private Typeface fontTypeface;
-        private IBrush textBrush;
-        private const int fontSize = 12;
-        PriorityQueue<int, float> peaksToDraw = new();
 
         // To avoid data race on bitmap when the bounds are changing quickly
         private Mutex renderMutex = new(false);
@@ -70,7 +70,8 @@ namespace MSpecpp.Controls
             if (change.Property == DataContextProperty ||
                 change.Property == BoundsProperty ||
                 change.Property == ViewportSizeProperty ||
-                change.Property == ForegroundProperty)
+                change.Property == ForegroundProperty ||
+                change.Property == PeakCountProperty)
             {
                 // In case this is called from other threads
                 Dispatcher.UIThread.Post(DoUpdate);
@@ -96,29 +97,35 @@ namespace MSpecpp.Controls
 
             SpectrumViewport size = ViewportSize;
             Color foreground = Foreground;
+            int peakCount = PeakCount;
             bitmap = null;
             Task.Run(() =>
             {
-                RedrawBitmap(size, foreground.ToUInt32());
+                RedrawBitmap(size, foreground.ToUInt32(), peakCount);
                 Dispatcher.UIThread.Post(InvalidateVisual);
             });
         }
 
-        private unsafe void RedrawBitmap(SpectrumViewport viewportSize, uint color)
+        private unsafe void RedrawBitmap(SpectrumViewport viewportSize, uint color, int peakCount = 0)
         {
             Interlocked.Increment(ref renderTasksAlive);
             renderMutex.WaitOne();
             var bitmap = GetBitmap();
             if (bitmap != null)
             {
-                Array.Clear(bitmapData, 0, bitmapData.Length);
+                using var frameBuffer = bitmap.Lock();
+                using var skBitmap = new SKBitmap(bitmap.PixelSize.Width, bitmap.PixelSize.Height, SKColorType.Rgba8888,
+                    SKAlphaType.Unpremul);
+                skBitmap.SetPixels(frameBuffer.Address);
+                uint* rawPtr = (uint*)skBitmap.GetPixels();
+
                 if (spectrum != null)
                 {
                     // Viewport-related
                     int startIndex = (int)(spectrum.Length * viewportSize.StartPos);
                     int endIndex = (int)(spectrum.Length * viewportSize.EndPos);
-                    float yLowerLimit = viewportSize.YLowerBound;
-                    float yViewAspect = viewportSize.YHigherBound - yLowerLimit;
+                    float yLowerLimit = viewportSize.YLowerBound, yHigherLimit = viewportSize.YHigherBound;
+                    float yViewAspect = yHigherLimit - yLowerLimit;
                     sampleCount = Math.Clamp(endIndex - startIndex, 1, int.MaxValue);
 
                     int endSample = 0;
@@ -138,36 +145,72 @@ namespace MSpecpp.Controls
                             0, bitmap.PixelSize.Height - 1);
                         float yMin = Math.Clamp((segment.Min() - yLowerLimit) / yViewAspect * bitmap.PixelSize.Height,
                             0, bitmap.PixelSize.Height - 1);
-                        DrawPeak(bitmapData, bitmap.PixelSize, endPoint - i, i,
+                        DrawPeak(rawPtr, bitmap.PixelSize, endPoint - i, i,
                             (int)MathF.Round(Math.Min(yMin, prevYMax)),
                             (int)MathF.Round(Math.Max(yMax, prevYMin)), color);
                         (prevYMax, prevYMin) = (yMax, yMin);
                     }
 
-                    peaksToDraw.Clear();
-                    if (spectrum.Peaks != null && MainViewModel.Instance.ShowPeaks)
+                    PriorityQueue<int, float> peaksToDraw = new();
+                    if (spectrum.Peaks != null && peakCount > 0)
                     {
-                        const int peakCount = 5;
                         int startPeakIndex = Array.FindIndex(spectrum.Peaks, (x) => x >= startIndex);
                         int endPeakIndex = Array.FindLastIndex(spectrum.Peaks, (x) => x < endIndex);
 
-                        for (int i = startPeakIndex; i <= endPeakIndex; i++)
+                        if (startPeakIndex >= 0 || endPeakIndex >= 0)
                         {
-                            peaksToDraw.Enqueue(spectrum.Peaks[i], spectrum.Intensities[spectrum.Peaks[i]]);
-
-                            if (peaksToDraw.Count > peakCount)
+                            for (int i = startPeakIndex; i <= endPeakIndex; i++)
                             {
-                                peaksToDraw.Dequeue();
+                                peaksToDraw.Enqueue(spectrum.Peaks[i], spectrum.Intensities[spectrum.Peaks[i]]);
+
+                                if (peaksToDraw.Count > peakCount)
+                                {
+                                    peaksToDraw.Dequeue();
+                                }
+                            }
+
+                            using SKPaint textPaint = new SKPaint();
+                            textPaint.TextSize = 13;
+                            textPaint.IsAntialias = true;
+                            textPaint.Color = new SKColor(color);
+                            textPaint.Typeface = SKTypeface.FromFamilyName(
+                                "Arial",
+                                SKFontStyleWeight.Normal,
+                                SKFontStyleWidth.Normal,
+                                SKFontStyleSlant.Upright);
+
+                            using SKCanvas bitmapCanvas = new SKCanvas(skBitmap);
+                            SKRect bounds = new(), prevBounds = SKRect.Empty;
+                            float xIndexAspect = endIndex - startIndex;
+                            var sortedPeaks = peaksToDraw.UnorderedItems.ToArray();
+                            Array.Sort(sortedPeaks, (a, b) => a.Element.CompareTo(b.Element));
+                            foreach (var peak in sortedPeaks)
+                            {
+                                float peakY = Math.Clamp(
+                                    (yHigherLimit - peak.Priority) / yViewAspect * bitmap.PixelSize.Height,
+                                    0, bitmap.PixelSize.Height - 1);
+                                float peakX = (peak.Element - (float)startIndex) / xIndexAspect *
+                                              bitmap.PixelSize.Width;
+
+                                string textToWrite = $"{spectrum.Masses[peak.Element]:0.000}";
+                                textPaint.MeasureText(textToWrite, ref bounds);
+                                bounds.Location = new SKPoint(
+                                    Math.Clamp(peakX - 0.5f * bounds.Width, 0, bitmap.PixelSize.Width),
+                                    Math.Clamp(peakY - bounds.Height, 0, bitmap.PixelSize.Height));
+                                if (bounds.IntersectsWith(prevBounds))
+                                {
+                                    bounds.Location = bounds.Location with
+                                    {
+                                        Y = Math.Clamp(prevBounds.Location.Y - bounds.Height - 2, 0,
+                                            bitmap.PixelSize.Height)
+                                    };
+                                }
+
+                                bitmapCanvas.DrawText(textToWrite, bounds.Location, textPaint);
+                                prevBounds = bounds;
                             }
                         }
                     }
-                }
-
-                using var frameBuffer = bitmap.Lock();
-                fixed (uint* bitmapPtr = &bitmapData[0])
-                {
-                    long sizeToCopy = bitmapData.Length * sizeof(uint);
-                    Buffer.MemoryCopy((void*)bitmapPtr, (void*)frameBuffer.Address, sizeToCopy, sizeToCopy);
                 }
             }
 
@@ -183,31 +226,6 @@ namespace MSpecpp.Controls
             {
                 var rect = Bounds.WithX(0).WithY(0);
                 context.DrawImage(bitmap, rect, rect);
-
-                if (peaksToDraw.Count > 0)
-                {
-                    float yHigherLimit = ViewportSize.YHigherBound;
-                    float yViewAspect = yHigherLimit - ViewportSize.YLowerBound;
-                    int startIndex = (int)(spectrum.Length * ViewportSize.StartPos);
-                    int xIndexAspect = (int)(spectrum.Length * (ViewportSize.EndPos - ViewportSize.StartPos));
-
-                    var peaks = peaksToDraw.UnorderedItems.ToArray();
-                    foreach (var peak in peaks)
-                    {
-                        float peakY = Math.Clamp(
-                            (yHigherLimit - peak.Priority) / yViewAspect * (float)rect.Height,
-                            0, (float)rect.Height - 1);
-                        float peakX = (peak.Element - startIndex) / xIndexAspect * (float)rect.Width;
-                        var formattedText = new FormattedText($"{spectrum.Masses[peak.Element]:0.000}",
-                            CultureInfo.CurrentUICulture,
-                            FlowDirection.LeftToRight,
-                            fontTypeface, fontSize, textBrush);
-
-                        context.DrawText(formattedText, new Point(
-                            Math.Clamp(peakX - 0.5f * formattedText.Width, 0, rect.Width),
-                            Math.Clamp(peakY - formattedText.Height, 0, rect.Height)));
-                    }
-                }
             }
         }
 
@@ -228,7 +246,6 @@ namespace MSpecpp.Controls
                     size, new Vector(96, 96),
                     Avalonia.Platform.PixelFormat.Rgba8888,
                     Avalonia.Platform.AlphaFormat.Unpremul);
-                bitmapData = new uint[size.Width * size.Height];
             }
 
             return bitmap;
@@ -237,7 +254,7 @@ namespace MSpecpp.Controls
         /// <summary>
         /// Reference: https://github.com/stakira/OpenUtau/blob/master/OpenUtau/Controls/WaveformImage.cs#L139
         /// </summary>
-        private void DrawPeak(uint[] data, PixelSize size, int drawWidth, int x, int y1, int y2, uint color)
+        private unsafe void DrawPeak(uint* data, PixelSize size, int drawWidth, int x, int y1, int y2, uint color)
         {
             // Draw the spectrum from down to up
             (y1, y2) = (size.Height - y1 - 1, size.Height - y2 - 1);

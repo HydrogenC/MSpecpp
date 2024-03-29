@@ -1,4 +1,6 @@
-﻿using Avalonia;
+﻿using System.IO;
+using System.Text.Json;
+using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
@@ -21,7 +23,22 @@ public partial class App : Application
         // Without this line you will get duplicate validations from both Avalonia and CT
         BindingPlugins.DataValidators.RemoveAt(0);
 
-        MainViewModel.Instance = new MainViewModel();
+        SettingsModel? settings = null;
+        if (File.Exists(SettingsModel.DefaultConfigPath))
+        {
+            string jsonString = File.ReadAllText(SettingsModel.DefaultConfigPath);
+            settings = JsonSerializer.Deserialize(jsonString, SourceGenerationContext.Default.SettingsModel);
+        }
+
+        if (settings != null)
+        {
+            MainViewModel.Instance = new MainViewModel(settings!);
+        }
+        else
+        {
+            MainViewModel.Instance = new MainViewModel();
+        }
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow

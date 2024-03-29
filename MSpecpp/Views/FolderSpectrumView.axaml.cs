@@ -28,10 +28,7 @@ public partial class FolderSpectrumView : UserControl
             MainStackPanel.Children.Clear();
             foreach (var spec in viewModel.SpectrumViewModels)
             {
-                MainStackPanel.Children.Add(new SpectrumCard
-                {
-                    DataContext = spec
-                });
+                MainStackPanel.Children.Add(new SpectrumCard(spec));
             }
 
             isLoaded = true;

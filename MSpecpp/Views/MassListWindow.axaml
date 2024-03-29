@@ -1,0 +1,23 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:mSpecpp="clr-namespace:MSpecpp"
+        xmlns:viewModels="clr-namespace:MSpecpp.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="MSpecpp.Views.MassListWindow" Background="{DynamicResource Brush.Window}"
+        Title="MassListWindow" x:DataType="viewModels:MassListViewModel">
+    <Grid RowDefinitions="Auto,*">
+        <TextBlock Grid.Row="0" HorizontalAlignment="Left" Text="{Binding Data.Count, StringFormat='Peaks of count {0}'}"
+                   Classes="bold_text" Margin="20,20,10,0" />
+        <DataGrid Grid.Row="1" Margin="20" Name="MainGrid" AutoGenerateColumns="True"
+                  IsReadOnly="True" ItemsSource="{Binding Data}"
+                  CanUserReorderColumns="True"
+                  CanUserResizeColumns="True"
+                  CanUserSortColumns="True"
+                  GridLinesVisibility="All"
+                  BorderThickness="1" BorderBrush="Gray">
+        </DataGrid>
+    </Grid>
+
+</Window>

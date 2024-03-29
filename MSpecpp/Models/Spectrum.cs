@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -211,14 +212,13 @@ public class Spectrum
 
         if (bytesRead != 0)
         {
-            MainViewModel.Instance.Information = "Bytes cannot be divided by 4, possible corruption! ";
+            Debug.Print("Bytes cannot be divided by 4, possible corruption! ");
         }
 
         int shouldBeLength = int.Parse(acquDict["$TD"]);
         if (shouldBeLength > intensities.Count)
         {
-            MainViewModel.Instance.Information =
-                "The number of tof/mass values reported in the acqu file is greater than in fid! ";
+            Debug.Print("The number of tof/mass values reported in the acqu file is greater than in fid! ");
         }
 
         // ToF data

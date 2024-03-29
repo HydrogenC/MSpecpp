@@ -14,12 +14,17 @@
                 <TextBlock Text="{Binding Id}" />
             </CheckBox>
             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                <TextBlock HorizontalAlignment="Right" Text="{Binding Sd, StringFormat='S.D = {0}'}"
-                           Classes="bold_text" Padding="10,10,10,0" />
+                <Button Padding="8,4,8,4" DockPanel.Dock="Left" Name="MassTableButton"
+                        VerticalAlignment="Stretch" Click="MassTableButton_OnClick">
+                    <TextBlock Text="Mass Table" VerticalAlignment="Center" Classes="bold_text" />
+                </Button>
+                <TextBlock IsVisible="{Binding  $parent[v:MainView].((vm:MainViewModel)DataContext).HasPeaks}"
+                           Name="PeakCountLabel"
+                           HorizontalAlignment="Right" Classes="bold_text" Padding="10,0,10,0" />
                 <TextBlock HorizontalAlignment="Right" Text="{Binding Mean, StringFormat='Mean = {0}'}"
-                           Classes="bold_text" Padding="10,10,10,0" />
+                           Classes="bold_text" Padding="10,0,10,0" />
                 <TextBlock HorizontalAlignment="Right" Text="{Binding Score, StringFormat='Score = {0:0.00}'}"
-                           Classes="bold_text" Padding="10,10,10,0" />
+                           Classes="bold_text" Padding="10,0,10,0" />
             </StackPanel>
             <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="34,*" RowDefinitions="*,34"
                   Margin="10,10,10,0">
@@ -33,6 +38,7 @@
                         BorderBrush="{DynamicResource Brush.Border2}" HorizontalAlignment="Stretch">
                     <c:SpectrumControl Name="SpectrumView" DataContext="{Binding MainSpectrum}"
                                        Height="200"
+                                       PeakCount="{Binding $parent[v:MainView].((vm:MainViewModel)DataContext).PeakCount}"
                                        ViewportSize="{Binding $parent[v:MainView].((vm:MainViewModel)DataContext).ViewportSize, Mode=OneTime}" />
                 </Border>
                 <c:HorizontalAxisTicksControl Grid.Row="1" Grid.Column="1" Margin="0,1,0,1"
