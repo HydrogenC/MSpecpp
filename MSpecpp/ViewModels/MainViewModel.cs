@@ -38,6 +38,8 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty] private float snr = 2;
 
+    [ObservableProperty] private int scoringCriteriaIndex = 0;
+
     public MainViewModel(SettingsModel settings)
     {
         if (Directory.Exists(settings.OpenPath))

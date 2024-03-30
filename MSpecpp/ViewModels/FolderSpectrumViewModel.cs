@@ -51,10 +51,41 @@ public class FolderSpectrumViewModel : ViewModelBase
             batchMean += spec.Mean / SpectrumViewModels.Length;
         }
 
+        Func<SpectrumViewModel, float> scoringFunc = (x) => x.Rms;
+        switch (MainViewModel.Instance.ScoringCriteriaIndex)
+        {
+            // Closest to mean
+            case 0:
+                scoringFunc = (x) => (1 - MathF.Tanh(MathF.Abs(batchMean - x.Mean) * 0.01f)) * 100f;
+                break;
+            // Largest mean
+            case 1:
+                scoringFunc = (x) => x.Mean / 10f;
+                break;
+            // Largest rms
+            case 2:
+                scoringFunc = (x) => x.Rms / 10f;
+                break;
+            // Largest s.d.
+            case 3:
+                scoringFunc = (x) => x.Sd / 10f;
+                break;
+            // Most peaks
+            case 4:
+                scoringFunc = (x) => x.MainSpectrum.Peaks?.Length ?? 0;
+                break;
+            // Least peaks
+            case 5:
+                // Assume that the peaks won't be over 400
+                scoringFunc = (x) => (1 - MathF.Tanh((x.MainSpectrum.Peaks?.Length ?? 0) * 0.01f)) * 100f;
+                break;
+        }
+
         foreach (var spec in SpectrumViewModels)
         {
-            spec.Score = MathF.Tanh(MathF.Abs(batchMean - spec.Mean) * 0.01f) * 100f;
+            spec.Score = scoringFunc(spec);
         }
+
 
         // Sort spectrums by rms from large to small
         Array.Sort(SpectrumViewModels, ((a, b) => b.Score.CompareTo(a.Score)));

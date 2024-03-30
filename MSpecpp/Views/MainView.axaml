@@ -72,6 +72,20 @@
                             <NumericUpDown Margin="0,4,10,0" Minimum="0" MinHeight="10"
                                            Value="{Binding TargetSelectionCount}" FormatString="0" />
                         </StackPanel>
+                        <StackPanel Margin="8,0,0,10" Orientation="Vertical">
+                            <TextBlock Margin="0,0,0,0" Text="Scoring Criteria" HorizontalAlignment="Left" />
+                            <ComboBox Margin="0,4,10,0" HorizontalAlignment="Stretch" SelectionChanged="SelectingItemsControl_OnSelectionChanged"
+                                      SelectedIndex="{Binding ScoringCriteriaIndex}">
+                                <ComboBox.Items>
+                                    <ComboBoxItem>Cloest to mean</ComboBoxItem>
+                                    <ComboBoxItem>Largest mean</ComboBoxItem>
+                                    <ComboBoxItem>Largest RMS</ComboBoxItem>
+                                    <ComboBoxItem>Largest Standard Deviation</ComboBoxItem>
+                                    <ComboBoxItem>Most peaks (requires 'Show Peaks')</ComboBoxItem>
+                                    <ComboBoxItem>Least peaks (requires 'Show Peaks')</ComboBoxItem>
+                                </ComboBox.Items>
+                            </ComboBox>
+                        </StackPanel>
                         <CheckBox Margin="8,0,0,10" Name="ShowPeaksBox" IsChecked="True"
                                   IsCheckedChanged="ShowPeaksBox_OnIsCheckedChanged">
                             <TextBlock Margin="0,0,0,0" Text="Show Peaks" HorizontalAlignment="Left" />

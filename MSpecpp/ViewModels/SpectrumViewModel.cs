@@ -63,6 +63,7 @@ public partial class SpectrumViewModel : ViewModelBase
         }
 
         Sd = MathF.Sqrt(sdTemp);
+        Rms = MathF.Sqrt(rmsSqared);
         MaxValue = maxValueTemp;
     }
 

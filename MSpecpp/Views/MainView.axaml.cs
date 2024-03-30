@@ -167,4 +167,13 @@ public partial class MainView : UserControl
             MainViewModel.Instance.PeakCount = 0;
         }
     }
+
+    private void SelectingItemsControl_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        // Reload the view to update the sorting
+        if (SpectrumViewer.Content is FolderSpectrumView)
+        {
+            SpectrumViewer.Content = LoadFolder(FolderSelector.SelectedIndex);
+        }
+    }
 }
