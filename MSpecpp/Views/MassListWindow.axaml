@@ -4,7 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:mSpecpp="clr-namespace:MSpecpp"
         xmlns:viewModels="clr-namespace:MSpecpp.ViewModels"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="450"
         x:Class="MSpecpp.Views.MassListWindow" Background="{DynamicResource Brush.Window}"
         Title="MassListWindow" x:DataType="viewModels:MassListViewModel">
     <Grid RowDefinitions="Auto,*">

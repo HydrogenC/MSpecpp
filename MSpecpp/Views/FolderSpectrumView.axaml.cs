@@ -15,9 +15,11 @@ public partial class FolderSpectrumView : UserControl
 {
     private bool isLoaded = false;
 
-    public FolderSpectrumView()
+    public FolderSpectrumView(FolderSpectrumViewModel viewModel)
     {
         InitializeComponent();
+        DataContext = viewModel;
+        TopText.Text = $"{viewModel.AssociatedFolder.SelectedDict.Count} spectrums in total";
     }
 
     public void SpectrumLoadedCallback()
@@ -25,7 +27,6 @@ public partial class FolderSpectrumView : UserControl
         Dispatcher.UIThread.Post(() =>
         {
             var viewModel = DataContext as FolderSpectrumViewModel;
-            MainStackPanel.Children.Clear();
             foreach (var spec in viewModel.SpectrumViewModels)
             {
                 MainStackPanel.Children.Add(new SpectrumCard(spec));
@@ -53,16 +54,13 @@ public partial class FolderSpectrumView : UserControl
     // Try to release the resource to save memory
     private void Control_OnUnloaded(object? sender, RoutedEventArgs e)
     {
-        Dispatcher.UIThread.Post(() =>
-        {
-            var viewModel = DataContext as FolderSpectrumViewModel;
-            viewModel.AssociatedFolder.ReleaseSpectrums();
-        });
+        var viewModel = DataContext as FolderSpectrumViewModel;
+        viewModel.AssociatedFolder.ReleaseSpectrums();
     }
 
     private void Control_OnLoaded(object? sender, RoutedEventArgs e)
     {
         var viewModel = DataContext as FolderSpectrumViewModel;
-        Task.Run(() => viewModel.CreateSpectrumViews(SpectrumLoadedCallback));
+        viewModel.CreateSpectrumViews(SpectrumLoadedCallback);
     }
 }

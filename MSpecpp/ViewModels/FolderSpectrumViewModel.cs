@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace MSpecpp.ViewModels;
 
@@ -12,6 +14,21 @@ public class FolderSpectrumViewModel : ViewModelBase
     public FolderSpectrumViewModel(CaseFolder associatedFolder)
     {
         AssociatedFolder = associatedFolder;
+        WeakReferenceMessenger.Default.Register<SpectrumViewportChangedMessage>(this,
+            (r, m) =>
+            {
+                if (m.isHorizontal)
+                {
+                    var batchMax = SpectrumViewModels.Max((x) => x.GetMaxValue(
+                        MainViewModel.Instance.ViewportSize.StartPos, MainViewModel.Instance.ViewportSize.EndPos));
+
+                    // Avoid notifying update for twice
+                    MainViewModel.Instance.ViewportSize.UpdateViewportNoNotify(
+                        yHigher: batchMax * 1.14f, yLower: -batchMax * 0.02f);
+                }
+
+                WeakReferenceMessenger.Default.Send(new SpectrumViewportRefreshMessage());
+            });
     }
 
     public SpectrumViewModel[] SpectrumViewModels { get; set; }
@@ -23,8 +40,10 @@ public class FolderSpectrumViewModel : ViewModelBase
         SpectrumViewModels = AssociatedFolder.Spectrums.Select((x) => new SpectrumViewModel(AssociatedFolder, x))
             .ToArray();
         var batchMax = SpectrumViewModels.Max((x) => x.MaxValue);
-        MainViewModel.Instance.ViewportSize.YHigherBound = batchMax * 1.1f;
-        MainViewModel.Instance.ViewportSize.YLowerBound = -batchMax * 0.02f;
+
+        // Since the views are not created yet, it's not necessary to notify
+        MainViewModel.Instance.ViewportSize.UpdateViewportNoNotify(
+            yHigher: batchMax * 1.14f, yLower: -batchMax * 0.02f);
 
         float batchMean = 0f;
         foreach (var spec in SpectrumViewModels)

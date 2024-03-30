@@ -15,25 +15,14 @@ public partial class MainViewModel : ViewModelBase
 {
     public MainViewModel()
     {
-        viewportSize.PropertyChanged += ViewportSizeOnPropertyChanged;
-    }
-
-    private void ViewportSizeOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        WeakReferenceMessenger.Default.Send(ViewportSize);
     }
 
     public static MainViewModel Instance { get; set; }
 
     [ObservableProperty] private string title = "MSpec++";
 
-    [ObservableProperty] private SpectrumViewport viewportSize = new()
-    {
-        StartPos = 0,
-        EndPos = 1,
-        YHigherBound = 160000,
-        YLowerBound = -1000
-    };
+    // The updating of this property is handled manually
+    public SpectrumViewport ViewportSize { get; } = SpectrumViewport.Dummy;
 
     [ObservableProperty] private string openedDir = "";
 
@@ -51,7 +40,6 @@ public partial class MainViewModel : ViewModelBase
 
     public MainViewModel(SettingsModel settings)
     {
-        viewportSize.PropertyChanged += ViewportSizeOnPropertyChanged;
         if (Directory.Exists(settings.OpenPath))
         {
             OpenFolder(settings.OpenPath, false);

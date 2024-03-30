@@ -8,6 +8,6 @@
              x:DataType="vm:FolderSpectrumViewModel" 
              Unloaded="Control_OnUnloaded" Loaded="Control_OnLoaded">
     <StackPanel Name="MainStackPanel">
-        <TextBlock Text="Loading..." HorizontalAlignment="Center" Classes="bold_text" Margin="0,10,0,0" />
+        <TextBlock Name="TopText" Text="Loading..." HorizontalAlignment="Center" Classes="bold_text" Margin="0,10,0,10" />
     </StackPanel>
 </UserControl>

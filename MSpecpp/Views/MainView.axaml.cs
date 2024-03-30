@@ -71,10 +71,7 @@ public partial class MainView : UserControl
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private FolderSpectrumView LoadFolder(int index)
     {
-        return new FolderSpectrumView
-        {
-            DataContext = new FolderSpectrumViewModel(MainViewModel.Instance.CaseFolders[index])
-        };
+        return new FolderSpectrumView(new FolderSpectrumViewModel(MainViewModel.Instance.CaseFolders[index]));
     }
 
     private void MaximizeOrRestoreWindow(object? sender, TappedEventArgs e)

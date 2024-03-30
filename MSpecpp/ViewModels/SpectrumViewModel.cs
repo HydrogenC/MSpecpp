@@ -66,6 +66,26 @@ public partial class SpectrumViewModel : ViewModelBase
         MaxValue = maxValueTemp;
     }
 
+    public float GetMaxValue(float startPos, float endPos)
+    {
+        float maxValueTemp = 0;
+
+        int startIndex = (int)(MainSpectrum.Length * startPos);
+        int endIndex = (int)(MainSpectrum.Length * endPos);
+        if (startIndex < 0 || endPos < 0)
+        {
+            return 0;
+        }
+
+        ArraySegment<float> segment = new(MainSpectrum.Intensities, startIndex, endIndex - startIndex);
+        foreach (var item in segment)
+        {
+            maxValueTemp = MathF.Max(maxValueTemp, item);
+        }
+
+        return maxValueTemp;
+    }
+
     [ObservableProperty] private string id;
 
     [ObservableProperty] private float rms;

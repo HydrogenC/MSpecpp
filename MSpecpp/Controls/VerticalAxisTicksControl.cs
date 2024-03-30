@@ -2,6 +2,7 @@
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Messaging;
@@ -11,20 +12,11 @@ namespace MSpecpp.Controls;
 
 public class VerticalAxisTicksControl : Control
 {
-    public static readonly StyledProperty<SpectrumViewport> ViewportSizeProperty =
-        AvaloniaProperty.Register<SpectrumControl, SpectrumViewport>(nameof(ViewportSize), SpectrumViewport.Dummy);
-
     public static readonly StyledProperty<IPen> StrokeProperty =
         AvaloniaProperty.Register<SpectrumControl, IPen>(nameof(Stroke));
 
     private Typeface fontTypeface;
     private const int fontSize = 12;
-
-    public SpectrumViewport ViewportSize
-    {
-        get => GetValue(ViewportSizeProperty);
-        set => SetValue(ViewportSizeProperty, value);
-    }
 
     public IPen Stroke
     {
@@ -35,23 +27,36 @@ public class VerticalAxisTicksControl : Control
     public VerticalAxisTicksControl()
     {
         // Since the spectrum viewport is passed by reference, we don't need to assign
-        WeakReferenceMessenger.Default.Register<SpectrumViewport>(this,
+        WeakReferenceMessenger.Default.Register<SpectrumViewportRefreshMessage>(this,
             (r, m) => { Dispatcher.UIThread.Post(InvalidateVisual); });
         fontTypeface = new Typeface("Arial");
+    }
+
+    protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
+    {
+        base.OnPointerWheelChanged(e);
+        e.Handled = true;
     }
 
     public override void Render(DrawingContext context)
     {
         base.Render(context);
-
-        // one tenth of the magnitude level
-        var tickSpan = MathF.Pow(10, MathF.Floor(MathF.Log10(ViewportSize.YHigherBound)) - 1);
         var rect = Bounds.WithX(0).WithY(0);
+        // Allow the control to be hittested
+        context.FillRectangle(Brushes.Transparent, rect);
 
+        var viewportSize = MainViewModel.Instance.ViewportSize;
+        // one tenth of the magnitude level
+        var tickSpan = MathF.Pow(10, MathF.Floor(MathF.Log10(viewportSize.YHigherBound)) - 1);
         float tickIntensity = 0;
         // I believe local variables are faster than properties
-        float higherBound = ViewportSize.YHigherBound,
-            yAspect = ViewportSize.YHigherBound - ViewportSize.YLowerBound;
+        float higherBound = viewportSize.YHigherBound,
+            yAspect = viewportSize.YHigherBound - viewportSize.YLowerBound;
+        if (yAspect == 0)
+        {
+            return;
+        }
+
         var textBrush = Stroke.Brush;
         for (int i = 0; tickIntensity <= higherBound; i++)
         {

@@ -1,20 +1,44 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 
 namespace MSpecpp.ViewModels;
 
-public class SpectrumViewportChangedMessage(SpectrumViewport s) : ValueChangedMessage<SpectrumViewport>(s);
+/// <summary>
+/// 
+/// </summary>
+/// <param name="isHorizontal">If there is any horizontal changes</param>
+public record SpectrumViewportChangedMessage(bool isHorizontal);
+
+public record SpectrumViewportRefreshMessage;
 
 // We make this readonly to ensure every field change is modified
-public partial class SpectrumViewport : ObservableObject
+public class SpectrumViewport
 {
-    [ObservableProperty] private float startPos;
+    
+    public float StartPos { get; private set; }
 
-    [ObservableProperty] private float endPos;
+    public float EndPos { get; private set; }
 
-    [ObservableProperty] private float yLowerBound;
+    public float YLowerBound { get; private set; }
 
-    [ObservableProperty] private float yHigherBound;
+    public float YHigherBound { get; private set; }
+
+    public void UpdateViewport(float? start = null, float? end = null, float? yHigher = null, float? yLower = null)
+    {
+        bool isHorizontal = start != null || end != null;
+        UpdateViewportNoNotify(start, end, yHigher, yLower);
+        WeakReferenceMessenger.Default.Send(new SpectrumViewportChangedMessage(isHorizontal));
+    }
+
+    public void UpdateViewportNoNotify(float? start = null, float? end = null, float? yHigher = null,
+        float? yLower = null)
+    {
+        StartPos = start ?? StartPos;
+        EndPos = end ?? EndPos;
+        YHigherBound = yHigher ?? YHigherBound;
+        YLowerBound = yLower ?? YLowerBound;
+    }
 
     public static SpectrumViewport Dummy => new()
     {

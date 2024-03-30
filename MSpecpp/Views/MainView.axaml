@@ -79,7 +79,7 @@
                         <StackPanel Margin="8,0,0,10" Orientation="Vertical"
                                     IsVisible="{Binding ElementName=ShowPeaksBox, Path=IsChecked}">
                             <TextBlock Margin="0,0,0,0" Text="Half Window Size" HorizontalAlignment="Left" />
-                            <NumericUpDown Margin="0,4,10,0" Minimum="0" MinHeight="10"
+                            <NumericUpDown Margin="0,4,10,0" Minimum="0" MinHeight="10" Increment="5"
                                            Value="{Binding HalfWindowSize}" FormatString="0" />
                         </StackPanel>
                         <StackPanel Margin="8,0,0,10" Orientation="Vertical"
@@ -131,15 +131,11 @@
                 </Grid>
             </ScrollViewer>
             <GridSplitter Grid.Column="1" />
-            <Grid RowDefinitions="Auto,*,60" Grid.Column="2" Name="MainPanel"
+            <Grid RowDefinitions="*,60" Grid.Column="2" Name="MainPanel"
                   Background="{StaticResource Brush.Window}">
-                <rs:RangeSlider Margin="40,0,40,0" MoveWholeRange="True" x:Name="MainSlider" Grid.Row="0"
-                                LowerSelectedValue="{Binding ViewportSize.StartPos}"
-                                UpperSelectedValue="{Binding ViewportSize.EndPos}" Maximum="1" Minimum="0"
-                                IsThumbOverlap="True" />
                 <ScrollViewer Name="SpectrumViewer" Margin="20,0,0,0" Padding="0,0,20,0" AllowAutoHide="False"
-                              Grid.Row="1" />
-                <Border Grid.Row="2" Background="{DynamicResource Brush.ToolBar}" BorderThickness="0,1,0,0"
+                              Grid.Row="0" />
+                <Border Grid.Row="1" Background="{DynamicResource Brush.ToolBar}" BorderThickness="0,1,0,0"
                         BorderBrush="{DynamicResource Brush.Border0}" Padding="0,10,0,10">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Padding="8,0,8,0" Margin="0,0,12,0" DockPanel.Dock="Left" Name="SelectTopButton"

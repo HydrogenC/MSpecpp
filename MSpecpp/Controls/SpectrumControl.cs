@@ -21,11 +21,8 @@ namespace MSpecpp.Controls
 {
     internal class SpectrumControl : Control
     {
-        public static readonly StyledProperty<SpectrumViewport> ViewportSizeProperty =
-            AvaloniaProperty.Register<SpectrumControl, SpectrumViewport>(nameof(ViewportSize), SpectrumViewport.Dummy);
-
         public static readonly StyledProperty<int> PeakCountProperty =
-            AvaloniaProperty.Register<SpectrumControl, int>(nameof(ViewportSize), 0);
+            AvaloniaProperty.Register<SpectrumControl, int>(nameof(PeakCount), 0);
 
         public static readonly StyledProperty<Color> ForegroundProperty =
             AvaloniaProperty.Register<SpectrumControl, Color>(nameof(Foreground));
@@ -33,14 +30,8 @@ namespace MSpecpp.Controls
         public SpectrumControl()
         {
             // Since the spectrum viewport is passed by reference, we don't need to assign
-            WeakReferenceMessenger.Default.Register<SpectrumViewport>(this,
+            WeakReferenceMessenger.Default.Register<SpectrumViewportRefreshMessage>(this,
                 (r, m) => { Dispatcher.UIThread.Post(DoUpdate); });
-        }
-
-        public SpectrumViewport ViewportSize
-        {
-            get => GetValue(ViewportSizeProperty);
-            set => SetValue(ViewportSizeProperty, value);
         }
 
         public Color Foreground
@@ -69,7 +60,6 @@ namespace MSpecpp.Controls
             base.OnPropertyChanged(change);
             if (change.Property == DataContextProperty ||
                 change.Property == BoundsProperty ||
-                change.Property == ViewportSizeProperty ||
                 change.Property == ForegroundProperty ||
                 change.Property == PeakCountProperty)
             {
@@ -95,7 +85,7 @@ namespace MSpecpp.Controls
                 return;
             }
 
-            SpectrumViewport size = ViewportSize;
+            SpectrumViewport size = MainViewModel.Instance.ViewportSize;
             Color foreground = Foreground;
             int peakCount = PeakCount;
             bitmap = null;
@@ -126,88 +116,96 @@ namespace MSpecpp.Controls
                     int endIndex = (int)(spectrum.Length * viewportSize.EndPos);
                     float yLowerLimit = viewportSize.YLowerBound, yHigherLimit = viewportSize.YHigherBound;
                     float yViewAspect = yHigherLimit - yLowerLimit;
-                    sampleCount = Math.Clamp(endIndex - startIndex, 1, int.MaxValue);
-
-                    int endSample = 0;
-                    float prevYMax, prevYMin;
-                    prevYMax = prevYMin = -yLowerLimit / yViewAspect * bitmap.PixelSize.Height;
-                    for (int i = 0; i < bitmap.PixelSize.Width; i += Resolution)
+                    if (yViewAspect != 0)
                     {
-                        int endPoint = Math.Clamp(i + Resolution, 0, bitmap.PixelSize.Width);
-                        int startSample = endSample;
-                        // Avoid negative values
-                        endSample = Math.Clamp((int)((double)endPoint / bitmap.PixelSize.Width * sampleCount) - 1,
-                            startSample, int.MaxValue);
-                        // Make sure there is at least one sample
-                        var segment = new ArraySegment<float>(spectrum.Intensities, startIndex + startSample,
-                            Math.Clamp(endSample - startSample, 1, int.MaxValue));
-                        float yMax = Math.Clamp((segment.Max() - yLowerLimit) / yViewAspect * bitmap.PixelSize.Height,
-                            0, bitmap.PixelSize.Height - 1);
-                        float yMin = Math.Clamp((segment.Min() - yLowerLimit) / yViewAspect * bitmap.PixelSize.Height,
-                            0, bitmap.PixelSize.Height - 1);
-                        DrawPeak(rawPtr, bitmap.PixelSize, endPoint - i, i,
-                            (int)MathF.Round(Math.Min(yMin, prevYMax)),
-                            (int)MathF.Round(Math.Max(yMax, prevYMin)), color);
-                        (prevYMax, prevYMin) = (yMax, yMin);
-                    }
+                        sampleCount = Math.Clamp(endIndex - startIndex, 1, int.MaxValue);
 
-                    PriorityQueue<int, float> peaksToDraw = new();
-                    if (spectrum.Peaks != null && peakCount > 0)
-                    {
-                        int startPeakIndex = Array.FindIndex(spectrum.Peaks, (x) => x >= startIndex);
-                        int endPeakIndex = Array.FindLastIndex(spectrum.Peaks, (x) => x < endIndex);
-
-                        if (startPeakIndex >= 0 && endPeakIndex >= 0)
+                        int endSample = 0;
+                        float prevYMax, prevYMin;
+                        prevYMax = prevYMin = -yLowerLimit / yViewAspect * bitmap.PixelSize.Height;
+                        
+                        // Draw spectrum
+                        for (int i = 0; i < bitmap.PixelSize.Width; i += Resolution)
                         {
-                            for (int i = startPeakIndex; i <= endPeakIndex; i++)
+                            int endPoint = Math.Clamp(i + Resolution, 0, bitmap.PixelSize.Width);
+                            int startSample = endSample;
+                            // Avoid negative values
+                            endSample = Math.Clamp((int)((double)endPoint / bitmap.PixelSize.Width * sampleCount) - 1,
+                                startSample, int.MaxValue);
+                            // Make sure there is at least one sample
+                            var segment = new ArraySegment<float>(spectrum.Intensities, startIndex + startSample,
+                                Math.Clamp(endSample - startSample, 1, int.MaxValue));
+                            float yMax = Math.Clamp(
+                                (segment.Max() - yLowerLimit) / yViewAspect * bitmap.PixelSize.Height,
+                                0, bitmap.PixelSize.Height - 1);
+                            float yMin = Math.Clamp(
+                                (segment.Min() - yLowerLimit) / yViewAspect * bitmap.PixelSize.Height,
+                                0, bitmap.PixelSize.Height - 1);
+                            DrawPeak(rawPtr, bitmap.PixelSize, endPoint - i, i,
+                                (int)MathF.Round(Math.Min(yMin, prevYMax)),
+                                (int)MathF.Round(Math.Max(yMax, prevYMin)), color);
+                            (prevYMax, prevYMin) = (yMax, yMin);
+                        }
+
+                        // Annotate peaks
+                        PriorityQueue<int, float> peaksToDraw = new();
+                        if (spectrum.Peaks != null && peakCount > 0)
+                        {
+                            int startPeakIndex = Array.FindIndex(spectrum.Peaks, (x) => x >= startIndex);
+                            int endPeakIndex = Array.FindLastIndex(spectrum.Peaks, (x) => x < endIndex);
+
+                            if (startPeakIndex >= 0 && endPeakIndex >= 0)
                             {
-                                peaksToDraw.Enqueue(spectrum.Peaks[i], spectrum.Intensities[spectrum.Peaks[i]]);
-
-                                if (peaksToDraw.Count > peakCount)
+                                for (int i = startPeakIndex; i <= endPeakIndex; i++)
                                 {
-                                    peaksToDraw.Dequeue();
-                                }
-                            }
+                                    peaksToDraw.Enqueue(spectrum.Peaks[i], spectrum.Intensities[spectrum.Peaks[i]]);
 
-                            using SKPaint textPaint = new SKPaint();
-                            textPaint.TextSize = 13;
-                            textPaint.IsAntialias = true;
-                            textPaint.Color = new SKColor(color);
-                            textPaint.Typeface = SKTypeface.FromFamilyName(
-                                "Arial",
-                                SKFontStyleWeight.Normal,
-                                SKFontStyleWidth.Normal,
-                                SKFontStyleSlant.Upright);
-
-                            using SKCanvas bitmapCanvas = new SKCanvas(skBitmap);
-                            SKRect bounds = new(), prevBounds = SKRect.Empty;
-                            float xIndexAspect = endIndex - startIndex;
-                            var sortedPeaks = peaksToDraw.UnorderedItems.ToArray();
-                            Array.Sort(sortedPeaks, (a, b) => a.Element.CompareTo(b.Element));
-                            foreach (var peak in sortedPeaks)
-                            {
-                                float peakY = Math.Clamp(
-                                    (yHigherLimit - peak.Priority) / yViewAspect * bitmap.PixelSize.Height,
-                                    0, bitmap.PixelSize.Height - 1);
-                                float peakX = (peak.Element - (float)startIndex) / xIndexAspect *
-                                              bitmap.PixelSize.Width;
-
-                                string textToWrite = $"{spectrum.Masses[peak.Element]:0.000}";
-                                textPaint.MeasureText(textToWrite, ref bounds);
-                                bounds.Location = new SKPoint(
-                                    Math.Clamp(peakX - 0.5f * bounds.Width, 0, bitmap.PixelSize.Width),
-                                    Math.Clamp(peakY - bounds.Height, 0, bitmap.PixelSize.Height));
-                                if (bounds.IntersectsWith(prevBounds))
-                                {
-                                    bounds.Location = bounds.Location with
+                                    if (peaksToDraw.Count > peakCount)
                                     {
-                                        Y = Math.Clamp(prevBounds.Location.Y - bounds.Height - 2, 0,
-                                            bitmap.PixelSize.Height)
-                                    };
+                                        peaksToDraw.Dequeue();
+                                    }
                                 }
 
-                                bitmapCanvas.DrawText(textToWrite, bounds.Location, textPaint);
-                                prevBounds = bounds;
+                                using SKPaint textPaint = new SKPaint();
+                                textPaint.TextSize = 13;
+                                textPaint.IsAntialias = true;
+                                textPaint.Color = new SKColor(color);
+                                textPaint.Typeface = SKTypeface.FromFamilyName(
+                                    "Arial",
+                                    SKFontStyleWeight.Normal,
+                                    SKFontStyleWidth.Normal,
+                                    SKFontStyleSlant.Upright);
+
+                                using SKCanvas bitmapCanvas = new SKCanvas(skBitmap);
+                                SKRect bounds = new(), prevBounds = SKRect.Empty;
+                                float xIndexAspect = endIndex - startIndex;
+                                var sortedPeaks = peaksToDraw.UnorderedItems.ToArray();
+                                Array.Sort(sortedPeaks, (a, b) => a.Element.CompareTo(b.Element));
+                                foreach (var peak in sortedPeaks)
+                                {
+                                    float peakY = Math.Clamp(
+                                        (yHigherLimit - peak.Priority) / yViewAspect * bitmap.PixelSize.Height,
+                                        0, bitmap.PixelSize.Height - 1);
+                                    float peakX = (peak.Element - (float)startIndex) / xIndexAspect *
+                                                  bitmap.PixelSize.Width;
+
+                                    string textToWrite = $"{spectrum.Masses[peak.Element]:0.000}";
+                                    textPaint.MeasureText(textToWrite, ref bounds);
+                                    bounds.Location = new SKPoint(
+                                        Math.Clamp(peakX - 0.5f * bounds.Width, 0, bitmap.PixelSize.Width),
+                                        Math.Clamp(peakY - bounds.Height, 0, bitmap.PixelSize.Height));
+                                    if (bounds.IntersectsWith(prevBounds))
+                                    {
+                                        bounds.Location = bounds.Location with
+                                        {
+                                            Y = Math.Clamp(prevBounds.Location.Y - bounds.Height - 2, 0,
+                                                bitmap.PixelSize.Height)
+                                        };
+                                    }
+
+                                    bitmapCanvas.DrawText(textToWrite, bounds.Location, textPaint);
+                                    prevBounds = bounds;
+                                }
                             }
                         }
                     }
