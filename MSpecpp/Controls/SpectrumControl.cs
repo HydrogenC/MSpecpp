@@ -5,6 +5,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using MSpecpp.ViewModels;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -27,6 +28,22 @@ namespace MSpecpp.Controls
         public static readonly StyledProperty<Color> ForegroundProperty =
             AvaloniaProperty.Register<SpectrumControl, Color>(nameof(Foreground));
 
+        public static readonly StyledProperty<int> StartIndexProperty =
+            AvaloniaProperty.Register<SpectrumControl, int>(nameof(StartIndex));
+
+        public static readonly StyledProperty<int> EndIndexProperty =
+            AvaloniaProperty.Register<SpectrumControl, int>(nameof(EndIndex));
+
+        class ReverseComparer : Comparer<float>
+        {
+            public override int Compare(float x, float y)
+            {
+                return y.CompareTo(x);
+            }
+
+            public static ReverseComparer Instance = new ReverseComparer();
+        }
+
         public SpectrumControl()
         {
             // Since the spectrum viewport is passed by reference, we don't need to assign
@@ -44,6 +61,18 @@ namespace MSpecpp.Controls
         {
             get => GetValue(PeakCountProperty);
             set => SetValue(PeakCountProperty, value);
+        }
+
+        public int StartIndex
+        {
+            get => GetValue(StartIndexProperty);
+            set => SetValue(StartIndexProperty, value);
+        }
+
+        public int EndIndex
+        {
+            get => GetValue(EndIndexProperty);
+            set => SetValue(EndIndexProperty, value);
         }
 
         private WriteableBitmap? bitmap;
@@ -86,17 +115,19 @@ namespace MSpecpp.Controls
             }
 
             SpectrumViewport size = MainViewModel.Instance.ViewportSize;
-            Color foreground = Foreground;
+            uint foreground = Foreground.ToUInt32();
             int peakCount = PeakCount;
+            int startIndex = StartIndex, endIndex = EndIndex;
             bitmap = null;
             Task.Run(() =>
             {
-                RedrawBitmap(size, foreground.ToUInt32(), peakCount);
+                RedrawBitmap(size, startIndex, endIndex, foreground, peakCount);
                 Dispatcher.UIThread.Post(InvalidateVisual);
             });
         }
 
-        private unsafe void RedrawBitmap(SpectrumViewport viewportSize, uint color, int peakCount = 0)
+        private unsafe void RedrawBitmap(SpectrumViewport viewportSize, int startIndex, int endIndex, uint color,
+            int peakCount = 0)
         {
             Interlocked.Increment(ref renderTasksAlive);
             renderMutex.WaitOne();
@@ -111,35 +142,41 @@ namespace MSpecpp.Controls
 
                 if (spectrum != null)
                 {
-                    // Viewport-related
-                    int startIndex = (int)(spectrum.Length * viewportSize.StartPos);
-                    int endIndex = (int)(spectrum.Length * viewportSize.EndPos);
                     float yLowerLimit = viewportSize.YLowerBound, yHigherLimit = viewportSize.YHigherBound;
                     float yViewAspect = yHigherLimit - yLowerLimit;
                     if (yViewAspect != 0)
                     {
                         sampleCount = Math.Clamp(endIndex - startIndex, 1, int.MaxValue);
 
-                        int endSample = 0;
+                        int sampleEnd = startIndex;
                         float prevYMax, prevYMin;
                         prevYMax = prevYMin = -yLowerLimit / yViewAspect * bitmap.PixelSize.Height;
-                        
+
                         // Draw spectrum
                         for (int i = 0; i < bitmap.PixelSize.Width; i += Resolution)
                         {
                             int endPoint = Math.Clamp(i + Resolution, 0, bitmap.PixelSize.Width);
-                            int startSample = endSample;
-                            // Avoid negative values
-                            endSample = Math.Clamp((int)((double)endPoint / bitmap.PixelSize.Width * sampleCount) - 1,
-                                startSample, int.MaxValue);
+                            float endMass =
+                                MainViewModel.Instance.ViewportSize.InterpolateMass(endPoint /
+                                    (float)bitmap.PixelSize.Width);
+                            int sampleStart = sampleEnd;
+                            // Use larger-or-equal to guarantee that it can always find an index
+                            sampleEnd = Array.FindIndex(spectrum.Masses, sampleStart, (x) => x >= endMass);
+
+                            if (sampleStart < 0 || sampleEnd < 0)
+                            {
+                                continue;
+                            }
+
                             // Make sure there is at least one sample
-                            var segment = new ArraySegment<float>(spectrum.Intensities, startIndex + startSample,
-                                Math.Clamp(endSample - startSample, 1, int.MaxValue));
+                            var (intensMin, intensMax) =
+                                spectrum.QueryTree.QueryMinMax(sampleStart,
+                                    sampleEnd > sampleStart ? sampleEnd : (sampleStart + 1));
                             float yMax = Math.Clamp(
-                                (segment.Max() - yLowerLimit) / yViewAspect * bitmap.PixelSize.Height,
+                                (intensMax - yLowerLimit) / yViewAspect * bitmap.PixelSize.Height,
                                 0, bitmap.PixelSize.Height - 1);
                             float yMin = Math.Clamp(
-                                (segment.Min() - yLowerLimit) / yViewAspect * bitmap.PixelSize.Height,
+                                (intensMin - yLowerLimit) / yViewAspect * bitmap.PixelSize.Height,
                                 0, bitmap.PixelSize.Height - 1);
                             DrawPeak(rawPtr, bitmap.PixelSize, endPoint - i, i,
                                 (int)MathF.Round(Math.Min(yMin, prevYMax)),
@@ -151,6 +188,7 @@ namespace MSpecpp.Controls
                         PriorityQueue<int, float> peaksToDraw = new();
                         if (spectrum.Peaks != null && peakCount > 0)
                         {
+                            // Peaks isn't too large, so I suppose O(n) finding is OK
                             int startPeakIndex = Array.FindIndex(spectrum.Peaks, (x) => x >= startIndex);
                             int endPeakIndex = Array.FindLastIndex(spectrum.Peaks, (x) => x < endIndex);
 
@@ -178,7 +216,8 @@ namespace MSpecpp.Controls
 
                                 using SKCanvas bitmapCanvas = new SKCanvas(skBitmap);
                                 SKRect bounds = new(), prevBounds = SKRect.Empty;
-                                float xIndexAspect = endIndex - startIndex;
+                                float startMass = MainViewModel.Instance.ViewportSize.StartMass,
+                                    massAspect = MainViewModel.Instance.ViewportSize.ViewportMassAspect;
                                 var sortedPeaks = peaksToDraw.UnorderedItems.ToArray();
                                 Array.Sort(sortedPeaks, (a, b) => a.Element.CompareTo(b.Element));
                                 foreach (var peak in sortedPeaks)
@@ -186,7 +225,7 @@ namespace MSpecpp.Controls
                                     float peakY = Math.Clamp(
                                         (yHigherLimit - peak.Priority) / yViewAspect * bitmap.PixelSize.Height,
                                         0, bitmap.PixelSize.Height - 1);
-                                    float peakX = (peak.Element - (float)startIndex) / xIndexAspect *
+                                    float peakX = (spectrum.Masses[peak.Element] - startMass) / massAspect *
                                                   bitmap.PixelSize.Width;
 
                                     string textToWrite = $"{spectrum.Masses[peak.Element]:0.000}";

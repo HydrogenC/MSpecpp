@@ -10,6 +10,7 @@ namespace MSpecpp.ViewModels;
 public class FolderSpectrumViewModel : ViewModelBase
 {
     public CaseFolder AssociatedFolder { get; init; }
+    public SpectrumViewModel[] SpectrumViewModels { get; set; }
 
     public FolderSpectrumViewModel(CaseFolder associatedFolder)
     {
@@ -17,10 +18,13 @@ public class FolderSpectrumViewModel : ViewModelBase
         WeakReferenceMessenger.Default.Register<SpectrumViewportChangedMessage>(this,
             (r, m) =>
             {
+                // Assume that the mass aspect of spectrums is the same
+                float startMass = MainViewModel.Instance.ViewportSize.StartMass;
+                float endMass = MainViewModel.Instance.ViewportSize.EndMass;
+
                 if (m.isHorizontal)
                 {
-                    var batchMax = SpectrumViewModels.Max((x) => x.GetMaxValue(
-                        MainViewModel.Instance.ViewportSize.StartPos, MainViewModel.Instance.ViewportSize.EndPos));
+                    var batchMax = SpectrumViewModels.Max((x) => x.UpdateHorizontalBounds(startMass, endMass));
 
                     // Avoid notifying update for twice
                     MainViewModel.Instance.ViewportSize.UpdateViewportNoNotify(
@@ -30,8 +34,6 @@ public class FolderSpectrumViewModel : ViewModelBase
                 WeakReferenceMessenger.Default.Send(new SpectrumViewportRefreshMessage());
             });
     }
-
-    public SpectrumViewModel[] SpectrumViewModels { get; set; }
 
     public void CreateSpectrumViews(Action callback)
     {
@@ -45,11 +47,16 @@ public class FolderSpectrumViewModel : ViewModelBase
         MainViewModel.Instance.ViewportSize.UpdateViewportNoNotify(
             yHigher: batchMax * 1.14f, yLower: -batchMax * 0.02f);
 
-        float batchMean = 0f;
+        float batchMean = 0f, seriesMinMass = float.MaxValue, seriesMaxMass = float.MinValue;
         foreach (var spec in SpectrumViewModels)
         {
             batchMean += spec.Mean / SpectrumViewModels.Length;
+            seriesMinMass = Math.Min(seriesMinMass, spec.MainSpectrum.Masses.First());
+            seriesMaxMass = Math.Max(seriesMaxMass, spec.MainSpectrum.Masses.Last());
         }
+
+        MainViewModel.Instance.ViewportSize.SeriesMinMass = seriesMinMass;
+        MainViewModel.Instance.ViewportSize.SeriesMaxMass = seriesMaxMass;
 
         Func<SpectrumViewModel, float> scoringFunc = (x) => x.Rms;
         switch (MainViewModel.Instance.ScoringCriteriaIndex)

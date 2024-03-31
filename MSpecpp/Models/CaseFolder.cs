@@ -68,12 +68,17 @@ public partial class CaseFolder : ObservableObject
                 {
                     Spectrums[pair.Second] = Spectrum.ReadFromBrukerFlex(pair.First.Key);
                     Spectrums[pair.Second].FindPeaks(MainViewModel.Instance.HalfWindowSize, MainViewModel.Instance.Snr);
+                    Spectrums[pair.Second].CreateSegmentTree();
                 });
         }
         else
         {
             Parallel.ForEach(iterator,
-                (pair) => { Spectrums[pair.Second] = Spectrum.ReadFromBrukerFlex(pair.First.Key); });
+                (pair) =>
+                {
+                    Spectrums[pair.Second] = Spectrum.ReadFromBrukerFlex(pair.First.Key);
+                    Spectrums[pair.Second].CreateSegmentTree();
+                });
         }
     }
 

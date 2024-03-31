@@ -24,9 +24,6 @@ public class HorizontalAxisTicksControl : Control
     private bool isPressing = false;
     private Point? pressedPosition = null;
 
-    // Avoid redundant calculations
-    private float seriesMinMass = 0, seriesMassAspect = 100, startMass = 0, massAspect = 100;
-
     public Spectrum AssociatedSpectrum
     {
         get => GetValue(AssociatedSpectrumProperty);
@@ -46,7 +43,7 @@ public class HorizontalAxisTicksControl : Control
             (r, m) => { Dispatcher.UIThread.Post(InvalidateVisual); });
         fontTypeface = new Typeface("Arial");
     }
-    
+
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
@@ -84,13 +81,17 @@ public class HorizontalAxisTicksControl : Control
         {
             var rect = Bounds.WithX(0).WithY(0);
             var pos = e.GetPosition(this);
-            float deltaMass = (float)((pressedPosition.Value.X - pos.X) / rect.Width) * massAspect;
+            float deltaMass = (float)((pressedPosition.Value.X - pos.X) / rect.Width) *
+                              MainViewModel.Instance.ViewportSize.ViewportMassAspect;
 
+            float seriesMassAspect = MainViewModel.Instance.ViewportSize.SeriesMassAspect;
             MainViewModel.Instance.ViewportSize.UpdateViewport(
                 start: Math.Clamp(
-                    MainViewModel.Instance.ViewportSize.StartPos + deltaMass / seriesMassAspect, 0, 1),
+                    MainViewModel.Instance.ViewportSize.StartPos +
+                    deltaMass / seriesMassAspect, 0, 1),
                 end: Math.Clamp(
-                    MainViewModel.Instance.ViewportSize.EndPos + deltaMass / seriesMassAspect, 0, 1));
+                    MainViewModel.Instance.ViewportSize.EndPos +
+                    deltaMass / seriesMassAspect, 0, 1));
 
             pressedPosition = pos;
         }
@@ -119,12 +120,16 @@ public class HorizontalAxisTicksControl : Control
 
         var rect = Bounds.WithX(0).WithY(0);
         var pos = e.GetPosition(this);
-        float pointedMass = startMass + (float)(pos.X / rect.Width) * massAspect;
+        float startMass = MainViewModel.Instance.ViewportSize.StartMass,
+            seriesMassAspect = MainViewModel.Instance.ViewportSize.SeriesMassAspect;
+        float pointedMass =
+            startMass + (float)(pos.X / rect.Width) * MainViewModel.Instance.ViewportSize.ViewportMassAspect;
 
         float factor = direction > 0 ? (1 / 0.8f) : 0.8f;
         float newStartMass = pointedMass - (pointedMass - startMass) * factor;
-        float newEndMass = pointedMass + (startMass + massAspect - pointedMass) * factor;
+        float newEndMass = pointedMass + (MainViewModel.Instance.ViewportSize.EndMass - pointedMass) * factor;
 
+        float seriesMinMass = MainViewModel.Instance.ViewportSize.SeriesMinMass;
         MainViewModel.Instance.ViewportSize.UpdateViewport(
             start: Math.Clamp(
                 (newStartMass - seriesMinMass) / seriesMassAspect, 0, 1),
@@ -142,13 +147,10 @@ public class HorizontalAxisTicksControl : Control
         // Allow the control to be hittested
         context.FillRectangle(Brushes.Transparent, rect);
 
-        // Min mass and mass aspect of whole spectrum (not viewport)
-        seriesMinMass = AssociatedSpectrum.Masses.First();
-        seriesMassAspect = AssociatedSpectrum.Masses.Last() - seriesMinMass;
         // Start and end mass of viewport
-        startMass = seriesMinMass + (MainViewModel.Instance.ViewportSize.StartPos * seriesMassAspect);
-        float endMass = seriesMinMass + (MainViewModel.Instance.ViewportSize.EndPos * seriesMassAspect);
-        massAspect = endMass - startMass;
+        float startMass = MainViewModel.Instance.ViewportSize.StartMass;
+        float endMass = MainViewModel.Instance.ViewportSize.EndMass;
+        float massAspect = endMass - startMass;
         var tickSpan = massAspect < 200 ? 1 : 10;
         float massPosition = MathF.Ceiling(startMass / tickSpan) * tickSpan;
         var textBrush = Stroke.Brush;

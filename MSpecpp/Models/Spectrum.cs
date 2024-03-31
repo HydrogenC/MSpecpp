@@ -22,6 +22,8 @@ public class Spectrum
 
     public int[]? Peaks { get; set; }
 
+    public SegmentTree? QueryTree { get; set; }
+
     public string FilePath { get; set; }
 
     public int Length => Masses.Length;
@@ -58,6 +60,14 @@ public class Spectrum
         }
 
         return mean;
+    }
+
+    /// <summary>
+    /// Creates a segment tree for fast querying
+    /// </summary>
+    public void CreateSegmentTree()
+    {
+        QueryTree = new SegmentTree(Intensities);
     }
 
     /// <summary>

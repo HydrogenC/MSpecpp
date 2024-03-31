@@ -10,19 +10,41 @@ namespace MSpecpp.ViewModels;
 /// <param name="isHorizontal">If there is any horizontal changes</param>
 public record SpectrumViewportChangedMessage(bool isHorizontal);
 
+public class UpdateBoundsAndReportMaxMessage(float startMass, float endMass) : RequestMessage<float>
+{
+    public float StartMass = startMass;
+    public float EndMass = endMass;
+}
+
 public record SpectrumViewportRefreshMessage;
 
 // We make this readonly to ensure every field change is modified
 public class SpectrumViewport
 {
-    
+    public float SeriesMinMass { get; set; }
+
+    public float SeriesMaxMass { get; set; }
+
     public float StartPos { get; private set; }
 
     public float EndPos { get; private set; }
 
+    public float SeriesMassAspect => SeriesMaxMass - SeriesMinMass;
+
+    public float StartMass => SeriesMinMass + StartPos * SeriesMassAspect;
+
+    public float EndMass => SeriesMinMass + EndPos * SeriesMassAspect;
+
+    public float ViewportMassAspect => SeriesMassAspect * (EndPos - StartPos);
+
     public float YLowerBound { get; private set; }
 
     public float YHigherBound { get; private set; }
+
+    public float InterpolateMass(float factor)
+    {
+        return StartMass + factor * ViewportMassAspect;
+    }
 
     public void UpdateViewport(float? start = null, float? end = null, float? yHigher = null, float? yLower = null)
     {

@@ -51,6 +51,8 @@ public partial class SpectrumViewModel : ViewModelBase
     private void UpdateSpectrumInfo()
     {
         int len = MainSpectrum.Length;
+        StartIndex = 0;
+        EndIndex = len;
         Mean = MainSpectrum.CalcMean();
 
         // Assigning observable properties might be slow, so we use local variables in calculation
@@ -67,24 +69,21 @@ public partial class SpectrumViewModel : ViewModelBase
         MaxValue = maxValueTemp;
     }
 
-    public float GetMaxValue(float startPos, float endPos)
+    /// <summary>
+    /// Update the start index and end index for rendering
+    /// </summary>
+    /// <param name="startMass">The new start mass. </param>
+    /// <param name="endMass">The new end mass. </param>
+    /// <returns>The maximum intensity within the new range. </returns>
+    public float UpdateHorizontalBounds(float startMass, float endMass)
     {
-        float maxValueTemp = 0;
+        int sIndex = Array.BinarySearch(MainSpectrum.Masses, startMass);
+        StartIndex = sIndex < 0 ? ~sIndex : sIndex;
 
-        int startIndex = (int)(MainSpectrum.Length * startPos);
-        int endIndex = (int)(MainSpectrum.Length * endPos);
-        if (startIndex < 0 || endPos < 0)
-        {
-            return 0;
-        }
+        int eIndex = Array.BinarySearch(MainSpectrum.Masses, endMass);
+        EndIndex = eIndex < 0 ? ~eIndex : eIndex;
 
-        ArraySegment<float> segment = new(MainSpectrum.Intensities, startIndex, endIndex - startIndex);
-        foreach (var item in segment)
-        {
-            maxValueTemp = MathF.Max(maxValueTemp, item);
-        }
-
-        return maxValueTemp;
+        return MainSpectrum.QueryTree.QueryMinMax(StartIndex, EndIndex).Item2;
     }
 
     [ObservableProperty] private string id;
@@ -100,4 +99,8 @@ public partial class SpectrumViewModel : ViewModelBase
     [ObservableProperty] private float sd;
 
     [ObservableProperty] private bool isSelected;
+
+    [ObservableProperty] private int startIndex;
+
+    [ObservableProperty] private int endIndex;
 }
