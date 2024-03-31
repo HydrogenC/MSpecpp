@@ -160,10 +160,14 @@ namespace MSpecpp.Controls
                                 MainViewModel.Instance.ViewportSize.InterpolateMass(endPoint /
                                     (float)bitmap.PixelSize.Width);
                             int sampleStart = sampleEnd;
+                            if (sampleStart < 0)
+                            {
+                                continue;
+                            }
+
                             // Use larger-or-equal to guarantee that it can always find an index
                             sampleEnd = Array.FindIndex(spectrum.Masses, sampleStart, (x) => x >= endMass);
-
-                            if (sampleStart < 0 || sampleEnd < 0)
+                            if (sampleEnd < 0)
                             {
                                 continue;
                             }
