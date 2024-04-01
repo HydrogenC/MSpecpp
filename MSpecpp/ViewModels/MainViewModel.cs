@@ -8,7 +8,6 @@ using System.Linq;
 using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace MSpecpp.ViewModels;
 
