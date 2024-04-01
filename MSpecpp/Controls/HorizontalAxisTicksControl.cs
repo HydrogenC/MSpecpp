@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using CommunityToolkit.Mvvm.Messaging;
 using MSpecpp.ViewModels;
 
@@ -21,6 +22,7 @@ public class HorizontalAxisTicksControl : Control
 
     private Typeface fontTypeface;
     private const int fontSize = 12;
+    private bool shouldRedrawWhenShown = false;
     private bool isPressing = false;
     private Point? pressedPosition = null;
 
@@ -40,7 +42,24 @@ public class HorizontalAxisTicksControl : Control
     {
         // Since the spectrum viewport is passed by reference, we don't need to assign
         WeakReferenceMessenger.Default.Register<SpectrumViewportRefreshMessage>(this,
-            (r, m) => { Dispatcher.UIThread.Post(InvalidateVisual); });
+            (r, m) =>
+            {
+                if (!IsOnScreen())
+                {
+                    shouldRedrawWhenShown = true;
+                    return;
+                }
+                
+                Dispatcher.UIThread.Post(InvalidateVisual);
+            });
+        WeakReferenceMessenger.Default.Register<ScrollViewScrolledMessage>(this, (r, m) =>
+        {
+            // Dispose bitmap if not visible in screen
+            if (IsOnScreen() && shouldRedrawWhenShown)
+            {
+                InvalidateVisual();
+            }
+        });
         fontTypeface = new Typeface("Arial");
     }
 
@@ -140,9 +159,22 @@ public class HorizontalAxisTicksControl : Control
         e.Handled = true;
     }
 
+    private bool IsOnScreen()
+    {
+        var clipRect = this.GetTransformedBounds()!.Value.Clip;
+        return clipRect.Width * clipRect.Height > 0;
+    }
+
     public override void Render(DrawingContext context)
     {
         base.Render(context);
+        if (!IsOnScreen())
+        {
+            shouldRedrawWhenShown = true;
+            return;
+        }
+
+        shouldRedrawWhenShown = false;
         var rect = Bounds.WithX(0).WithY(0);
         // Allow the control to be hittested
         context.FillRectangle(Brushes.Transparent, rect);
