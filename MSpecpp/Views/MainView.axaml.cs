@@ -12,6 +12,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace MSpecpp.Views;
 
@@ -91,7 +92,7 @@ public partial class MainView : UserControl
 
     public void ConfirmCurrentChanges()
     {
-        if (SpectrumViewer.Content is FolderSpectrumView view && FolderSelector.SelectedIndex >= 0 &&
+        if (SpectrumViewer.Content is FolderSpectrumView && FolderSelector.SelectedIndex >= 0 &&
             FolderSelector.SelectedIndex < MainViewModel.Instance.CaseFolders.Count)
         {
             MainViewModel.Instance.CaseFolders[FolderSelector.SelectedIndex].Confirmed = true;
@@ -187,5 +188,10 @@ public partial class MainView : UserControl
         {
             MainViewModel.Instance.CaseFolders[FolderSelector.SelectedIndex].Confirmed = false;
         }
+    }
+
+    private void SpectrumViewer_OnScrollChanged(object? sender, ScrollChangedEventArgs e)
+    {
+        WeakReferenceMessenger.Default.Send(new ScrollViewScrolledMessage());
     }
 }

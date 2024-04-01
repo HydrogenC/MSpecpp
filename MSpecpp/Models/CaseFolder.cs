@@ -30,13 +30,29 @@ public partial class CaseFolder : ObservableObject
             }
         }
 
+        SingleLevel = false;
         foreach (var topLevel in Directory.EnumerateDirectories(FolderPath))
         {
-            foreach (var secondLevel in Directory.EnumerateDirectories(topLevel))
+            if (Spectrum.ContainsBrukerFlex(topLevel))
             {
-                if (Spectrum.ContainsBrukerFlex(secondLevel))
+                SingleLevel = true;
+            }
+
+            if (SingleLevel)
+            {
+                if (Spectrum.ContainsBrukerFlex(topLevel))
                 {
-                    SelectedDict.TryAdd(secondLevel, false);
+                    SelectedDict.TryAdd(topLevel, false);
+                }
+            }
+            else
+            {
+                foreach (var secondLevel in Directory.EnumerateDirectories(topLevel))
+                {
+                    if (Spectrum.ContainsBrukerFlex(secondLevel))
+                    {
+                        SelectedDict.TryAdd(secondLevel, false);
+                    }
                 }
             }
         }
@@ -45,6 +61,8 @@ public partial class CaseFolder : ObservableObject
     }
 
     public string FolderPath { get; set; }
+
+    public bool SingleLevel { get; set; }
 
     public string DisplayName => FolderPath.Split(['/', '\\']).Last();
 

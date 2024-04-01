@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 
@@ -10,13 +11,9 @@ namespace MSpecpp.ViewModels;
 /// <param name="isHorizontal">If there is any horizontal changes</param>
 public record SpectrumViewportChangedMessage(bool isHorizontal);
 
-public class UpdateBoundsAndReportMaxMessage(float startMass, float endMass) : RequestMessage<float>
-{
-    public float StartMass = startMass;
-    public float EndMass = endMass;
-}
-
 public record SpectrumViewportRefreshMessage;
+
+public record ScrollViewScrolledMessage;
 
 // We make this readonly to ensure every field change is modified
 public class SpectrumViewport

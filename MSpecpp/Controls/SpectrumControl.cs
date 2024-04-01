@@ -14,7 +14,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using CommunityToolkit.Mvvm.Messaging;
 using SkiaSharp;
 
@@ -49,6 +51,29 @@ namespace MSpecpp.Controls
             // Since the spectrum viewport is passed by reference, we don't need to assign
             WeakReferenceMessenger.Default.Register<SpectrumViewportRefreshMessage>(this,
                 (r, m) => { Dispatcher.UIThread.Post(DoUpdate); });
+            WeakReferenceMessenger.Default.Register<ScrollViewScrolledMessage>(this, (r, m) =>
+            {
+                // Dispose bitmap if not visible in screen
+                if (IsOnScreen())
+                {
+                    if (bitmap == null)
+                    {
+                        Dispatcher.UIThread.Post(DoUpdate);
+                    }
+                }
+                else
+                {
+                    if (bitmap != null)
+                    {
+                        // Dispose bitmap to save space
+                        // Avoid data race with the render thread
+                        renderMutex.WaitOne();
+                        bitmap.Dispose();
+                        bitmap = null;
+                        renderMutex.ReleaseMutex();
+                    }
+                }
+            });
         }
 
         public Color Foreground
@@ -97,6 +122,21 @@ namespace MSpecpp.Controls
             }
         }
 
+        protected override void OnUnloaded(RoutedEventArgs e)
+        {
+            base.OnUnloaded(e);
+            // Dispose mutex
+            renderTasksAlive = 1000;
+            renderMutex.WaitOne();
+            renderMutex.Close();
+        }
+
+        private bool IsOnScreen()
+        {
+            var clipRect = this.GetTransformedBounds()!.Value.Clip;
+            return clipRect.Width * clipRect.Height > 0;
+        }
+
         public void DoUpdate()
         {
             if (DataContext is Spectrum { Length: > 0 } newSpec)
@@ -108,8 +148,8 @@ namespace MSpecpp.Controls
                 spectrum = null;
             }
 
-            // Allow up to two tasks for most: one running and one queued
-            if (renderTasksAlive >= 2)
+
+            if (!IsOnScreen())
             {
                 return;
             }
@@ -121,7 +161,15 @@ namespace MSpecpp.Controls
             bitmap = null;
             Task.Run(() =>
             {
+                // Allow up to two tasks for most: one running and one queued
+                if (renderTasksAlive >= 2)
+                {
+                    return;
+                }
+
+                Interlocked.Increment(ref renderTasksAlive);
                 RedrawBitmap(size, startIndex, endIndex, foreground, peakCount);
+                Interlocked.Decrement(ref renderTasksAlive);
                 Dispatcher.UIThread.Post(InvalidateVisual);
             });
         }
@@ -129,7 +177,6 @@ namespace MSpecpp.Controls
         private unsafe void RedrawBitmap(SpectrumViewport viewportSize, int startIndex, int endIndex, uint color,
             int peakCount = 0)
         {
-            Interlocked.Increment(ref renderTasksAlive);
             renderMutex.WaitOne();
             var bitmap = GetBitmap();
             if (bitmap != null)
@@ -256,7 +303,6 @@ namespace MSpecpp.Controls
             }
 
             renderMutex.ReleaseMutex();
-            Interlocked.Decrement(ref renderTasksAlive);
         }
 
         public override void Render(DrawingContext context)

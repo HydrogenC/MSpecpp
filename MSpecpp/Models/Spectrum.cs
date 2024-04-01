@@ -262,8 +262,10 @@ public class Spectrum
                 if (s >= 0)
                 {
                     // Assuming cubic with A*x^3 + B*x^2 + C*x + (D - tof) where x = sqrt(mz)
-                    var roots = FindRoots.Cubic(d - tofs[i], c, b, a);
-                    m = roots.Item1.Real;
+                    var (root1, root2, root3) = FindRoots.Cubic(d - tofs[i], c, b, a);
+                    // Pick the smallest root
+                    // The sign can be abandoned since we will square it
+                    m = Math.Min(Math.Abs(root1.Real), Math.Min(Math.Abs(root2.Real), Math.Abs(root3.Real)));
                 }
                 else
                 {
