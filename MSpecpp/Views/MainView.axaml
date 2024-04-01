@@ -74,7 +74,8 @@
                         </StackPanel>
                         <StackPanel Margin="8,0,0,10" Orientation="Vertical">
                             <TextBlock Margin="0,0,0,0" Text="Scoring Criteria" HorizontalAlignment="Left" />
-                            <ComboBox Margin="0,4,10,0" HorizontalAlignment="Stretch" SelectionChanged="SelectingItemsControl_OnSelectionChanged"
+                            <ComboBox Margin="0,4,10,0" HorizontalAlignment="Stretch"
+                                      SelectionChanged="SelectingItemsControl_OnSelectionChanged"
                                       SelectedIndex="{Binding ScoringCriteriaIndex}">
                                 <ComboBox.Items>
                                     <ComboBoxItem>Cloest to mean</ComboBoxItem>
@@ -85,6 +86,10 @@
                                     <ComboBoxItem>Least peaks (requires 'Show Peaks')</ComboBoxItem>
                                 </ComboBox.Items>
                             </ComboBox>
+                        </StackPanel>
+                        <StackPanel Margin="8,0,0,10" Orientation="Vertical">
+                            <TextBlock Margin="0,0,0,0" Text="Export Prefix" HorizontalAlignment="Left" />
+                            <TextBox Margin="0,4,10,0" Text="{Binding ExportPrefix}" />
                         </StackPanel>
                         <CheckBox Margin="8,0,0,10" Name="ShowPeaksBox" IsChecked="True"
                                   IsCheckedChanged="ShowPeaksBox_OnIsCheckedChanged">
@@ -152,6 +157,10 @@
                 <Border Grid.Row="1" Background="{DynamicResource Brush.ToolBar}" BorderThickness="0,1,0,0"
                         BorderBrush="{DynamicResource Brush.Border0}" Padding="0,10,0,10">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Padding="8,4,8,4" Margin="0,0,12,0" DockPanel.Dock="Left" Name="DeconfirmButton"
+                                Click="DeconfirmButton_OnClick" VerticalAlignment="Stretch">
+                            <TextBlock Text="Make as Unconfirmed" VerticalAlignment="Center" Classes="bold_text" />
+                        </Button>
                         <Button Padding="8,0,8,0" Margin="0,0,12,0" DockPanel.Dock="Left" Name="SelectTopButton"
                                 Click="SelectTopButton_OnClick" VerticalAlignment="Stretch">
                             <TextBlock Text="Select Top" VerticalAlignment="Center" Classes="bold_text" />

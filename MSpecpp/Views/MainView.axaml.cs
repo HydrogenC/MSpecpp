@@ -101,8 +101,11 @@ public partial class MainView : UserControl
             }
         }
 
-        // Save config
-        MainViewModel.Instance.SaveConfig(SettingsModel.DefaultConfigPath);
+        if (Directory.Exists(MainViewModel.Instance.OpenedDir))
+        {
+            // Save config
+            MainViewModel.Instance.SaveConfig(MainViewModel.Instance.ConfigPath);
+        }
     }
 
     public RelayCommand ConfirmCommand { get; private set; }
@@ -174,6 +177,15 @@ public partial class MainView : UserControl
         if (SpectrumViewer.Content is FolderSpectrumView)
         {
             SpectrumViewer.Content = LoadFolder(FolderSelector.SelectedIndex);
+        }
+    }
+
+    private void DeconfirmButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (SpectrumViewer.Content is FolderSpectrumView view && FolderSelector.SelectedIndex >= 0 &&
+            FolderSelector.SelectedIndex < MainViewModel.Instance.CaseFolders.Count)
+        {
+            MainViewModel.Instance.CaseFolders[FolderSelector.SelectedIndex].Confirmed = false;
         }
     }
 }

@@ -10,28 +10,32 @@ public class SettingsCaseFolderModel
 {
     public string FolderPath { get; set; }
 
+    public bool Confirmed { get; set; }
+
     public string[] SelectedSpectrumPaths { get; set; }
 
     [JsonConstructor]
     public SettingsCaseFolderModel()
     {
-        
     }
-    
-    public SettingsCaseFolderModel(CaseFolder folder)
+
+    public SettingsCaseFolderModel(CaseFolder folder, string basePath)
     {
-        FolderPath = folder.FolderPath;
+        FolderPath = Path.GetRelativePath(basePath, folder.FolderPath);
+        Confirmed = folder.Confirmed;
         SelectedSpectrumPaths = folder.SelectedDict
-            .Where((x) => x.Value).Select((x) => x.Key).ToArray();
+            .Where((x) => x.Value)
+            .Select((x) => Path.GetRelativePath(basePath, x.Key)).ToArray();
     }
 }
 
 public class SettingsModel
 {
-    public static string DefaultConfigPath => Path.Combine(
+    [Obsolete("Global config is deprecated, use per-folder config instead. ")]
+    public static string GlobalConfigPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "MSpecppConfig.json");
-    
+
     public string OpenPath { get; set; }
 
     public SettingsCaseFolderModel[] CaseFolders { get; set; }

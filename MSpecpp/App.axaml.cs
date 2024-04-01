@@ -23,9 +23,9 @@ public partial class App : Application
         BindingPlugins.DataValidators.RemoveAt(0);
 
         SettingsModel? settings = null;
-        if (File.Exists(SettingsModel.DefaultConfigPath))
+        if (File.Exists(SettingsModel.GlobalConfigPath))
         {
-            string jsonString = File.ReadAllText(SettingsModel.DefaultConfigPath);
+            string jsonString = File.ReadAllText(SettingsModel.GlobalConfigPath);
             settings = JsonSerializer.Deserialize(jsonString, SourceGenerationContext.Default.SettingsModel);
         }
 

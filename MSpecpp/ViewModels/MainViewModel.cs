@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace MSpecpp.ViewModels;
 
@@ -26,6 +27,8 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty] private string openedDir = "";
 
+    public string ConfigPath => Path.Combine(OpenedDir, "MSpecpp.json");
+
     [ObservableProperty] private ObservableCollection<CaseFolder> caseFolders = [];
 
     [ObservableProperty] private int targetSelectionCount = 4;
@@ -40,6 +43,8 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty] private int scoringCriteriaIndex = 0;
 
+    [ObservableProperty] private string exportPrefix = "";
+
     public MainViewModel(SettingsModel settings)
     {
         if (Directory.Exists(settings.OpenPath))
@@ -47,11 +52,12 @@ public partial class MainViewModel : ViewModelBase
             OpenFolder(settings.OpenPath, false);
         }
 
+        // The following code are obslete
         // Align config with newly acquired folders
         foreach (var folder in CaseFolders)
         {
             int indexInJson = Array.FindIndex(settings.CaseFolders, (x) => x.FolderPath == folder.FolderPath);
-            // folder found in config
+            // Folder found in config
             if (indexInJson >= 0)
             {
                 foreach (var path in settings.CaseFolders[indexInJson].SelectedSpectrumPaths)
@@ -67,15 +73,43 @@ public partial class MainViewModel : ViewModelBase
 
     public void OpenFolder(string path, bool loadSubDirs = true)
     {
-        if (Directory.Exists(path))
+        if (!Directory.Exists(path))
         {
-            OpenedDir = path;
+            return;
         }
 
+        OpenedDir = path;
         CaseFolders.Clear();
         foreach (var dir in Directory.EnumerateDirectories(path))
         {
             CaseFolders.Add(new CaseFolder(dir, loadSubDirs));
+        }
+
+        if (File.Exists(ConfigPath))
+        {
+            string jsonString = File.ReadAllText(ConfigPath);
+            SettingsModel settings =
+                JsonSerializer.Deserialize(jsonString, SourceGenerationContext.Default.SettingsModel);
+
+            // Align config with newly acquired folders
+            foreach (var folder in CaseFolders)
+            {
+                int indexInJson = Array.FindIndex(settings.CaseFolders,
+                    (x) => x.FolderPath == Path.GetRelativePath(OpenedDir, folder.FolderPath));
+                // Folder found in config
+                if (indexInJson >= 0)
+                {
+                    folder.Confirmed = settings.CaseFolders[indexInJson].Confirmed;
+
+                    foreach (var dir in settings.CaseFolders[indexInJson].SelectedSpectrumPaths)
+                    {
+                        folder.SelectedDict[Path.GetFullPath(dir, OpenedDir)] = true;
+                    }
+                }
+
+                // Read first then reload
+                folder.ReloadSubDirectories();
+            }
         }
     }
 
@@ -90,7 +124,7 @@ public partial class MainViewModel : ViewModelBase
         var settingsModel = new SettingsModel
         {
             OpenPath = OpenedDir,
-            CaseFolders = CaseFolders.Select((x) => new SettingsCaseFolderModel(x)).ToArray()
+            CaseFolders = CaseFolders.Select((x) => new SettingsCaseFolderModel(x, OpenedDir)).ToArray()
         };
 
         string jsonString = JsonSerializer.Serialize(settingsModel, SourceGenerationContext.Default.SettingsModel);
@@ -124,7 +158,13 @@ public partial class MainViewModel : ViewModelBase
             {
                 if (folder.SelectedDict[spectrum.FilePath])
                 {
-                    spectrum.ExportToTextFormat(Path.Combine(path, $"{folder.DisplayName}_{index}.txt"));
+                    string fileName = $"{folder.DisplayName}_{index}.txt";
+                    if (!string.IsNullOrWhiteSpace(ExportPrefix))
+                    {
+                        fileName = $"{ExportPrefix}_" + fileName;
+                    }
+
+                    spectrum.ExportToTextFormat(Path.Combine(path, fileName));
                     index++;
                 }
             }
