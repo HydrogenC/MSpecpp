@@ -263,9 +263,27 @@ public class Spectrum
                 {
                     // Assuming cubic with A*x^3 + B*x^2 + C*x + (D - tof) where x = sqrt(mz)
                     var (root1, root2, root3) = FindRoots.Cubic(d - tofs[i], c, b, a);
-                    // Pick the smallest root
+                    // Pick the appropriate root
+                    // 
                     // The sign can be abandoned since we will square it
                     m = Math.Min(Math.Abs(root1.Real), Math.Min(Math.Abs(root2.Real), Math.Abs(root3.Real)));
+
+                    // Extract the real parts
+                    double[] realRoots = [root1.Real, root2.Real, root3.Real];
+                    // Calculate tofs based on all three roots
+                    double[] trialTofs = realRoots.Select(x => x * x * s - e).ToArray();
+
+                    if (i == 0)
+                    {
+                        // Pick smallest positive
+                        tofs[i] = trialTofs.Where(x => x > 0).Min();
+                    }
+                    else
+                    {
+                        // Pick the smallest that is larger than the previous TOF
+                        tofs[i] = trialTofs.Where(x => x > tofs[i - 1]).Min();
+                    }
+
                 }
                 else
                 {
@@ -273,9 +291,8 @@ public class Spectrum
                     // same formula as tof2mass but instead of D(times) = ML3 - tof
                     // it seems to be necessary to use D(times) = tof - ML3
                     m = (-c + Math.Sqrt(Math.Abs(c * c - 4 * b * (tofs[i] - d)))) / (2 * b);
+                    tofs[i] = m * m * s - e;
                 }
-
-                tofs[i] = m * m * s - e;
             }
         }
         else
